@@ -1,0 +1,53 @@
+<html>
+<head><title>Help for GJarScan application (G like Groovy)</title>
+    <style TYPE="text/css">
+     <!--
+             body {
+                 background: #FFFF66;
+                 color: black
+                 border-width: thick;
+                 tborder-style: solid;
+                 tborder-color: #FFFF66;
+                 }
+       p.special {
+                 font: 12pt/14pt sans-serif;
+                 margin: 5px 0px 2px 25px;
+                 border: medium dashed #ff0000;
+                  }
+       blockquote {
+                 margin-left: 2cm;
+                 color: #00ff00 }
+        -->
+      </style>
+</head>
+<body bgcolor='#FFFF66'><hr/><h1>Help for GJarScan application (G like Groovy)</h1>
+<font size=12>
+    <table border="0">
+        <tr>
+            <td>        <h3>Purpose</h3>
+                <p>This application has visual user interface for modified Jarscan command line application (Java).</p>
+                <p>This is used to search a class(es) or package(s) (or file) from inside of jar (or possible .zip) files
+                    below a given directory and its subdirectory. The application will list all classes and jar files after search value, which are founded below given directories.</p>
+                <h3>Usage</h3>
+                <p>Press 'New Jarscan'-button at first, if needed. Then fill both textfields, select the combobox or another options
+                    before to press a execute button. Results of an execution are showing in the list.</p>
+
+                <p>
+                    Instead of a directory value for a search, a value can also be an environment variable (like: %JAVA_HOME%).
+                    When you are writing a class name with package name, you can use the / character in the place of . package separator.
+                </p>
+
+                <p>After a successfully search, select a 'Library Path:' jar row inside of the result list and then duppel click it with the mouse. That will copy jar file path
+                    into system clipboard. Then it is easy paste that value into your settings.</p>
+                <p>You can also select a row wich is starting: 'Class:' and duppel click that row to copy into the clipboard.</p>
+
+                <h4>Search inside of result list rows</h4>
+                <p>Fill Search inside result textfield with some text and press 'Search inside result'-button.
+                    If founded, all matched list rows are showing with violet color. When pressed 'Next' or 'Previous' buttons
+                some of those violet rows is showing with black backgrouond color and with white text. If you continue
+                    to press those two buttons the black row is changing its place in list rows.</p>
+
+            </td>
+        </tr>
+    </table>
+</font></body></html>

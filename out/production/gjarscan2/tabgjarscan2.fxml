@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.geometry.Point3D?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ButtonBar?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane fx:id="anchorPaneSearchDir" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gjarscan2.GJarScanController">
+   <top>
+      <GridPane fx:id="gridpane" hgap="5.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="225.0" prefWidth="2792.0" snapToPixel="false" vgap="5.0" BorderPane.alignment="CENTER_LEFT">
+        <columnConstraints>
+          <ColumnConstraints hgrow="SOMETIMES" maxWidth="440.888916015625" minWidth="10.0" prefWidth="401.7777913411458" />
+          <ColumnConstraints fillWidth="false" maxWidth="1967.0" minWidth="50.0" percentWidth="100.0" prefWidth="1966.5555419921875" />
+        </columnConstraints>
+          <rowConstraints>
+              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="ALWAYS" />
+              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="ALWAYS" />
+              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="ALWAYS" />
+              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="ALWAYS" />
+              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="ALWAYS" />
+              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="ALWAYS" />
+              <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="ALWAYS" />
+          </rowConstraints>
+         <children>
+            <Label prefHeight="19.0" prefWidth="342.0" text="Parent dir (or environment value like %HOME_JAVA%)">
+               <font>
+                  <Font name="System Bold" size="13.0" />
+               </font>
+            </Label>
+            <Label prefHeight="19.0" prefWidth="252.0" text="Searched class (package separator . or /)" GridPane.columnSpan="2147483647" GridPane.rowIndex="1">
+               <font>
+                  <Font name="System Bold" size="13.0" />
+               </font>
+            </Label>
+            <Label prefHeight="19.0" prefWidth="156.0" text="Another execute params" GridPane.rowIndex="2">
+               <font>
+                  <Font name="System Bold" size="13.0" />
+               </font>
+            </Label>
+            <Button mnemonicParsing="false" prefHeight="25.0" prefWidth="796.0" text="Start Class Search from jar files" GridPane.columnSpan="2" GridPane.rowIndex="3" GridPane.vgrow="ALWAYS" />
+            <HBox prefHeight="28.0" prefWidth="974.0" GridPane.columnIndex="1" GridPane.rowIndex="1">
+               <children>
+                  <ComboBox fx:id="searchType" minHeight="28.0" minWidth="124.0" prefHeight="24.0" prefWidth="124.0" />
+                  <TextField fx:id="textfieldSearchClass" maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="26.0" prefWidth="824.0" HBox.hgrow="ALWAYS" />
+               </children>
+            </HBox>
+            <HBox prefHeight="30.0" prefWidth="420.0" GridPane.columnIndex="1" GridPane.rowIndex="2" GridPane.vgrow="ALWAYS">
+               <children>
+                  <CheckBox mnemonicParsing="false" prefHeight="25.0" prefWidth="60.0" text="-zip" HBox.hgrow="ALWAYS" />
+                  <CheckBox mnemonicParsing="false" prefHeight="25.0" prefWidth="67.0" text="-help" />
+                  <CheckBox mnemonicParsing="false" prefHeight="25.0" prefWidth="117.0" text="-nosearchlist" />
+                  <CheckBox mnemonicParsing="false" prefHeight="25.0" prefWidth="132.0" text="-nosubdirsearch" />
+               </children>
+            </HBox>
+            <TextField prefHeight="26.0" prefWidth="651.0" GridPane.columnSpan="2" GridPane.rowIndex="4" GridPane.vgrow="ALWAYS" />
+            <ButtonBar maxWidth="1.7976931348623157E308" prefHeight="40.0" prefWidth="200.0" GridPane.rowIndex="5">
+              <buttons>
+                <Button fx:id="buttonSearchReslts" mnemonicParsing="false" text="Search witin results" />
+              </buttons>
+            </ButtonBar>
+            <HBox prefHeight="30.0" prefWidth="1123.0" GridPane.columnIndex="1">
+               <children>
+                  <Button fx:id="buttonSearchDir" mnemonicParsing="false" onAction="#buttonSearchDirClicked" prefHeight="26.0" prefWidth="124.0" text="Select search dir" />
+                  <TextField fx:id="textfieldSearchDir" prefHeight="26.0" prefWidth="512.0" HBox.hgrow="ALWAYS" />
+               </children>
+               <GridPane.margin>
+                  <Insets right="5.0" />
+               </GridPane.margin>
+               <padding>
+                  <Insets right="5.0" />
+               </padding>
+            </HBox>
+            <ButtonBar prefHeight="40.0" prefWidth="200.0" GridPane.columnIndex="1" GridPane.rowIndex="5">
+              <buttons>
+                  <Button fx:id="buttonNext1" mnemonicParsing="false" prefHeight="30.0" text="Next" />
+                  <Button fx:id="buttonPrevious1" mnemonicParsing="false" text="Previous" />
+              </buttons>
+            </ButtonBar>
+            <Label prefHeight="19.0" prefWidth="401.0" text="Result (select library path row in result to copy it into clipboard):" GridPane.rowIndex="6">
+               <font>
+                  <Font name="System Bold" size="13.0" />
+               </font>
+            </Label>
+         </children>
+         <rotationAxis>
+            <Point3D />
+         </rotationAxis>
+         <BorderPane.margin>
+            <Insets right="5.0" />
+         </BorderPane.margin>
+         <padding>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+         </padding>
+      </GridPane>
+   </top>
+   <center>
+      <ScrollPane fitToHeight="true" fitToWidth="true" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" BorderPane.alignment="BOTTOM_CENTER">
+         <content>
+            <ListView fx:id="listResult" prefHeight="30.0" prefWidth="223.0" />
+         </content>
+      </ScrollPane>
+   </center>
+</BorderPane>

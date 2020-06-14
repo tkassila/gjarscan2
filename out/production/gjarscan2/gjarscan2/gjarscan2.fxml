@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ButtonBar?>
+<?import javafx.scene.control.Menu?>
+<?import javafx.scene.control.MenuBar?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox prefHeight="400.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gjarscan2.Main">
+  <children>
+      <MenuBar nodeOrientation="LEFT_TO_RIGHT">
+         <menus>
+            <Menu mnemonicParsing="false" text="File">
+               <items>
+                  <MenuItem fx:id="buttonQuit" mnemonicParsing="false" onAction="#buttonQuitClicked" text="Quit" />
+               </items>
+            </Menu>
+            <Menu mnemonicParsing="false" text="Help">
+               <items>
+                  <MenuItem fx:id="helpMenuItem" mnemonicParsing="false" onAction="#helpMenuItemClicked" text="Help" />
+                  <MenuItem fx:id="aboutMenuItem" mnemonicParsing="false" onAction="#aboutMenuItemClicked" text="About GJarScan" />
+               </items>
+            </Menu>
+         </menus>
+      </MenuBar>
+      <VBox prefWidth="100.0">
+         <children>
+            <HBox VBox.vgrow="ALWAYS">
+               <children>
+                  <ButtonBar id="tabPaneMain" fx:id="tabPaneMain" prefHeight="40.0" prefWidth="228.0">
+                     <buttons>
+                        <Button id="buttonNewJarScan" fx:id="newJarScanButton" mnemonicParsing="false" onAction="#newJarScanButtonClicked" text="New search" />
+                        <Button fx:id="removeJarScanButton" mnemonicParsing="false" onAction="#removeJarScanButtonClicked" prefHeight="25.0" prefWidth="135.0" text="Remove search" />
+                     </buttons>
+                  </ButtonBar>
+                  <BorderPane prefHeight="40.0" prefWidth="332.0">
+                     <center>
+                        <Button fx:id="buttonTogleCurrentTabSplitPanel" mnemonicParsing="false" onAction="#togleSplitPanelOfcurrentGJarSanTab" text="Bigger or normal results in current tab" BorderPane.alignment="CENTER" />
+                     </center>
+                  </BorderPane>
+               </children>
+            </HBox>
+            <TabPane id="tabPaneMain" fx:id="tabPaneJarScan" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefWidth="320.0" tabClosingPolicy="UNAVAILABLE">
+               <tabs>
+                  <Tab text="Untitled Tab 1" />
+                  <Tab text="Untitled Tab 2" />
+               </tabs>
+               <padding>
+                  <Insets bottom="1.0" left="1.0" right="1.0" top="1.0" />
+               </padding>
+            </TabPane>
+         </children>
+      </VBox>
+  </children>
+   <padding>
+      <Insets bottom="1.0" left="1.0" right="1.0" top="1.0" />
+   </padding>
+</VBox>
