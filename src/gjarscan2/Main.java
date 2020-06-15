@@ -34,6 +34,8 @@ public class Main extends Application {
     @FXML
     Button removeJarScanButton;
     @FXML
+    Button copyJarScanButton;
+    @FXML
     TabPane tabPaneJarScan;
     @FXML
     Button buttonTogleCurrentTabSplitPanel;
@@ -104,9 +106,47 @@ public class Main extends Application {
         this.tabPaneJarScan.getTabs().addAll(gJarSanTab);
         this.tabPaneJarScan.getSelectionModel().selectLast();
         this.removeJarScanButton.setDisable(false);
+        this.copyJarScanButton.setDisable(false);
         this.buttonTogleCurrentTabSplitPanel.setDisable(false);
     }
 
+    @FXML
+    public void copyJarScanButtonClicked()
+    {
+        if (currentGJarSanTab == null)
+            return;
+        Object oldcurrentGJarSanTab = currentGJarSanTab;
+
+        // get old search values from currentGJarSanTab at first:
+        String strTextSearchDir = currentGJarSanTab.getGJarScanController().textfieldSearchDir.getText();
+        String strTtextfieldSearchClass = currentGJarSanTab.getGJarScanController().textfieldSearchClass.getText();
+        int indSelectedSearchType = currentGJarSanTab.getGJarScanController().searchType.getSelectionModel().getSelectedIndex();
+        boolean checkboxNosubdir = currentGJarSanTab.getGJarScanController().checkboxNosubdir.isSelected();
+        boolean checkboxNoSearchList = currentGJarSanTab.getGJarScanController().checkboxNoSearchList.isSelected();
+        boolean checkboxHelp = currentGJarSanTab.getGJarScanController().checkboxHelp.isSelected();
+        boolean checkboxNoSearchList2 = currentGJarSanTab.getGJarScanController().checkboxNoSearchList2.isSelected();
+        boolean checkboxZip = currentGJarSanTab.getGJarScanController().checkboxZip.isSelected();
+        boolean checkboxRemoveEmptyLines = currentGJarSanTab.getGJarScanController().checkboxRemoveEmptyLines.isSelected();
+
+        // then call newtabl method:
+        this.newJarScanButtonClicked();
+        // at last: set old search values into just created currenttab:
+        if (oldcurrentGJarSanTab != currentGJarSanTab)
+        {
+            currentGJarSanTab.getGJarScanController().textfieldSearchDir.setText(strTextSearchDir);
+            currentGJarSanTab.getGJarScanController().textfieldSearchClass.setText(strTtextfieldSearchClass);
+            if (indSelectedSearchType != -1)
+                currentGJarSanTab.getGJarScanController().searchType.getSelectionModel().select(indSelectedSearchType);
+            currentGJarSanTab.getGJarScanController().checkboxNosubdir.setSelected(checkboxNosubdir);
+            currentGJarSanTab.getGJarScanController().checkboxNoSearchList.setSelected(checkboxNoSearchList);
+            currentGJarSanTab.getGJarScanController().checkboxHelp.setSelected(checkboxHelp);
+            currentGJarSanTab.getGJarScanController().checkboxNoSearchList2.setSelected(checkboxNoSearchList2);
+            currentGJarSanTab.getGJarScanController().checkboxZip.setSelected(checkboxZip);
+            currentGJarSanTab.getGJarScanController().checkboxRemoveEmptyLines.setSelected(checkboxRemoveEmptyLines);
+        }
+    }
+
+    @FXML
     public void removeJarScanButtonClicked(){
         if (Main.bDebug)
             System.out.println("removeJarScanButtonClicked");
@@ -116,6 +156,7 @@ public class Main extends Application {
             if (this.tabPaneJarScan.getTabs().size() < 1) {
                 Main.currentGJarSanTab = null;
                 this.removeJarScanButton.setDisable(true);
+                this.copyJarScanButton.setDisable(true);
                 this.tabIndex = MINTABINDEX;
                 this.buttonTogleCurrentTabSplitPanel.setDisable(true);
             }
@@ -127,6 +168,7 @@ public class Main extends Application {
         }
         else {
             this.removeJarScanButton.setDisable(true);
+            this.copyJarScanButton.setDisable(true);
             this.tabIndex = MINTABINDEX;
         }
     }
@@ -184,6 +226,7 @@ public class Main extends Application {
 
         this.buttonTogleCurrentTabSplitPanel.setDisable(true);
         this.removeJarScanButton.setDisable(true);
+        this.copyJarScanButton.setDisable(true);
         this.tabPaneJarScan.getTabs().clear();
         this.tabPaneJarScan.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<Tab>() {
             @Override

@@ -20,6 +20,11 @@ public class GJarSanTab extends Tab {
     private GJarScanController controller = new GJarScanController();
    // FileChooser fileChooserForSearchDir = new FileChooser();
 
+    public GJarScanController getGJarScanController()
+    {
+        return controller;
+    }
+
     public GJarSanTab(int p_ind)
     {
         super("" +p_ind);

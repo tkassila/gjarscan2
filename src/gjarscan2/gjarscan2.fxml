@@ -33,16 +33,17 @@
          <children>
             <HBox VBox.vgrow="ALWAYS">
                <children>
-                  <ButtonBar id="tabPaneMain" fx:id="tabPaneMain" prefHeight="40.0" prefWidth="228.0">
+                  <ButtonBar id="tabPaneMain" fx:id="tabPaneMain" prefHeight="31.0" prefWidth="383.0">
                      <buttons>
                         <Button id="buttonNewJarScan" fx:id="newJarScanButton" mnemonicParsing="false" onAction="#newJarScanButtonClicked" text="New search" />
                         <Button fx:id="removeJarScanButton" mnemonicParsing="false" onAction="#removeJarScanButtonClicked" prefHeight="25.0" prefWidth="135.0" text="Remove search" />
+                        <Button fx:id="copyJarScanButton" mnemonicParsing="false" onAction="#copyJarScanButtonClicked" prefHeight="25.0" prefWidth="135.0" text="Copy search" />
                      </buttons>
                   </ButtonBar>
                   <BorderPane prefHeight="40.0" prefWidth="332.0">
-                     <center>
-                        <Button fx:id="buttonTogleCurrentTabSplitPanel" mnemonicParsing="false" onAction="#togleSplitPanelOfcurrentGJarSanTab" text="Bigger or normal results in current tab" BorderPane.alignment="CENTER" />
-                     </center>
+                     <right>
+                        <Button fx:id="buttonTogleCurrentTabSplitPanel" mnemonicParsing="false" onAction="#togleSplitPanelOfcurrentGJarSanTab" prefHeight="25.0" prefWidth="277.0" text="Bigger or normal results in current tab" BorderPane.alignment="CENTER" />
+                     </right>
                   </BorderPane>
                </children>
             </HBox>
