@@ -279,7 +279,7 @@ public class GJarScanController {
         this.listResult.setFixedCellSize(30);
         this.listResult.setStyle("-fx-font-size: 16px");
         this.buttonCancelExecution.setDisable(true);
-        this.textfieldSearhFromResult.setText(" start");
+        this.textfieldSearhFromResult.setText(" start =");
        // this.buttonExecution.setDisable(true);
         this.buttonNext.setDisable(true);
         this.buttonPrevious.setDisable(true);
