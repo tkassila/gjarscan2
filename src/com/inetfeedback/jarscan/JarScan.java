@@ -424,7 +424,7 @@ label0:
     private boolean progressCountRun;
     private ArrayList searchResults;
     private String startPath;
-    private static String versionNum = "2.0";
+    private static String versionNum = "2.1";
 
 
 

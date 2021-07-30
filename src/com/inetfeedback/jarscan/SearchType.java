@@ -21,5 +21,6 @@ public final class SearchType
     private final String type;
     public static final SearchType CLASS = new SearchType("class");
     public static final SearchType PACKAGE = new SearchType("package");
+    public static final SearchType SEARCHCODE = new SearchType("searchcode");
 
 }

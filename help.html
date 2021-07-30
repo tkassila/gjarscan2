@@ -37,15 +37,26 @@
                     When you are writing a class name with package name, you can use the / character in the place of . package separator.
                 </p>
 
-                <p>After a successfully search, select a 'Library Path:' jar row inside of the result list and then duppel click it with the mouse. That will copy jar file path
+                <p>After a successfully search, select a 'Library Path:' jar row inside of the result list and then dual click it with the mouse. That will copy jar file path
                     into system clipboard. Then it is easy paste that value into your settings.</p>
-                <p>You can also select a row wich is starting: 'Class:' and duppel click that row to copy into the clipboard.</p>
+                <p>You can also select a row wich is starting: 'Class:' and dual click that row to copy into the clipboard.</p>
 
                 <h4>Search inside of result list rows</h4>
                 <p>Fill Search inside result textfield with some text and press 'Search inside result'-button.
                     If founded, all matched list rows are showing with violet color. When pressed 'Next' or 'Previous' buttons
                 some of those violet rows is showing with black backgrouond color and with white text. If you continue
                     to press those two buttons the black row is changing its place in list rows.</p>
+
+                <h4>Set -search_imports execution option</h4>
+                <p>To list jar files used in a java, groovy etc application and founded in source
+                files, where import statements are founded.</p>
+                <p>1. Select jar find path as normal<br/>
+                   2. Select -search_imports execution option in the combobox<br/>
+                   3. Select source root dir if needed<br/>
+                   4. Press execution button. That means: all .java, .groovy, .kt, .scala source
+                    files are scanned and searched all import statements and classes.
+                    One jar file is listed only once.<br/>
+                </p>
 
             </td>
         </tr>

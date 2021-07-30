@@ -15,7 +15,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="700.0" prefWidth="782.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gjarscan2.GJarScanController">
+<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="700.0" prefWidth="782.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gjarscan2.GJarScanController">
    <children>
       <VBox prefHeight="200.0" prefWidth="100.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
          <children>
@@ -39,12 +39,13 @@
                   </TitledPane>
                   <TitledPane text="Searched class (package separator . or /)">
                      <content>
-                        <HBox prefHeight="28.0" prefWidth="974.0">
+                        <HBox prefHeight="28.0" prefWidth="974.0" spacing="5.0">
                            <children>
-                              <ComboBox fx:id="searchType" minHeight="28.0" minWidth="124.0" prefHeight="24.0" prefWidth="124.0" />
+                              <ComboBox fx:id="searchType" minHeight="28.0" minWidth="124.0" prefHeight="28.0" prefWidth="160.0" HBox.hgrow="NEVER" />
+                              <Button mnemonicParsing="false" prefHeight="30.0" prefWidth="124.0" text="Source root dir" HBox.hgrow="NEVER" />
                               <TextField fx:id="textfieldSearchClass" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
                                  <padding>
-                                    <Insets bottom="1.0" left="1.0" right="1.0" top="1.0" />
+                                    <Insets left="3.0" />
                                  </padding>
                               </TextField>
                            </children>

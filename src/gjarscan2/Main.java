@@ -86,7 +86,7 @@ public class Main extends Application {
     {
         Alert alert = new Alert(AlertType.INFORMATION);
         alert.setTitle("About");
-        alert.setHeaderText("GJarScan application 2.0");
+        alert.setHeaderText("GJarScan application 2.1");
         String s ="The application is used to find jar files below a given file directory where given class name exists.\nThis version of app is made JavaFx library.\n(c) Tuomas Kassila";
         alert.setContentText(s);
         alert.show();

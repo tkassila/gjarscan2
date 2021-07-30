@@ -1,8 +1,8 @@
 package gjarscan2;
 
+import javafx.concurrent.Task;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Worker;
 import javafx.concurrent.WorkerStateEvent;
@@ -14,7 +14,6 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
@@ -22,8 +21,14 @@ import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.util.Callback;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 
+import java.util.HashMap;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.stream.Stream;
+import java.nio.charset.StandardCharsets;
+import java.io.FileFilter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.awt.*;
@@ -33,8 +38,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.SourceDataLine;
@@ -42,8 +45,10 @@ import javax.sound.sampled.AudioSystem;
 
 public class GJarScanController {
 
+    private static final String cnstSearchImports = "-search_imports";
+
     private ObservableList<String> searchTypeList = FXCollections.observableArrayList(
-      "-class", "-package", "-files"
+            "-class", "-package", "-files", cnstSearchImports
     );
 
     static final int ROW_HEIGHT = 20;
@@ -242,15 +247,19 @@ public class GJarScanController {
     VBox anchorPaneUppder;
     @FXML
     VBox anchorPaneLower;
+    @FXML
+    Button buttonSourceRootDir;
 
     private boolean bProssesRestarted = false;
-    private boolean bExecuted = false;
+    private volatile boolean bExecuted = false;
     private final JarScanProcesses processes = new JarScanProcesses();
+    private Task<Integer> importTask = null;
     final ObservableList listResultItems = FXCollections.observableArrayList("1", "2", "3");
-    private String currentDuppelClickedItem = null;
+    private String currentDualClickedItem = null;
     private Double dZeroDiverPosition = null;
     private Double dHalfDiverPosition = null;
     private DirectoryChooser directoryChooser = new DirectoryChooser();
+    private DirectoryChooser directoryChooserOfSource = new DirectoryChooser();
     private File selectedSearhDirectory = null;
     private ListResultData [] arrResultTextRows = null;
     private ResultTextPosition [] arrSearchResults = null;
@@ -258,6 +267,9 @@ public class GJarScanController {
     private ResultTextPosition firstResultTextPosition = null;
     private ResultTextPosition lastResultTextPosition =  null;
     private int iIndextitledPaneSearhFromResult = -1;
+    private ExtensionsFilter sourcefilefilter = new ExtensionsFilter(new String[] {".java", ".groovy",".kt", ".scala"});
+    private HashMap<String,File> hmImportedJars = new HashMap<String,File>();
+    private List<ListResultData> importJars = new ArrayList<ListResultData>();
 
     @FXML
     public void initialize() {
@@ -266,7 +278,27 @@ public class GJarScanController {
         System.out.println("java.version=" +System.getProperty("java.version"));
         System.out.println("javafx.version=" +System.getProperty("javafx.version"));
 
-      //  this.listResult.setFont(defaultFont);
+        buttonSourceRootDir.setDisable(true);
+
+        searchType.getSelectionModel().selectedItemProperty().addListener((options, oldValue, newValue) -> {
+            System.out.println(newValue);
+            String strValue = (String) newValue;
+            if (strValue != null && strValue.equals(cnstSearchImports))
+            {
+                buttonSourceRootDir.setDisable(false);
+                textfieldSearchClass.setText("");
+                if (textfieldSearchDir.getText().trim().length() > 0)
+                    textfieldSearchClass.setText(textfieldSearchDir.getText());
+                else
+                    textfieldSearchClass.setText("");
+            }
+            else
+                buttonSourceRootDir.setDisable(true);
+        });
+
+        directoryChooserOfSource.setTitle("Select source root directory");
+
+        //  this.listResult.setFont(defaultFont);
 
         Platform.runLater(new Runnable() {
             @Override
@@ -302,21 +334,21 @@ public class GJarScanController {
                 if (event.getButton() == MouseButton.PRIMARY
                         && event.getClickCount() == 2 )
                 {
-                    currentDuppelClickedItem = null;
+                    currentDualClickedItem = null;
                     Object selected = listResult.getSelectionModel().getSelectedItem();
                     if (selected != null) {
                         boolean bJarPathSeeked = true;
-                        currentDuppelClickedItem = getJarPathValue(selected.toString());
-                        if (currentDuppelClickedItem == null)
+                        currentDualClickedItem = getJarPathValue(selected.toString());
+                        if (currentDualClickedItem == null)
                         {
                             bJarPathSeeked = false;
-                            currentDuppelClickedItem = getClassValue(selected.toString());
+                            currentDualClickedItem = getClassValue(selected.toString());
                         }
-                        if (currentDuppelClickedItem != null) {
+                        if (currentDualClickedItem != null) {
                             Toolkit.getDefaultToolkit()
                                     .getSystemClipboard()
                                     .setContents(
-                                            new StringSelection(currentDuppelClickedItem),
+                                            new StringSelection(currentDualClickedItem),
                                             null
                                     );
                             if (bJarPathSeeked)
@@ -398,6 +430,27 @@ public class GJarScanController {
         //     tabPaneMain.getTabs().clear();
         // buttonNewJarScan.setDisable(true);
        // buttonSearchDirClicked();
+    }
+
+    @FXML
+    public void buttonSourceRootDirPressed()
+    {
+        if (Main.bDebug)
+            System.out.println("buttonSourceRootDirPressed");
+        String strFieldSearchDir = textfieldSearchClass.getText();
+        if (strFieldSearchDir != null && strFieldSearchDir.trim().length() != 0)
+        {
+            File tmpf = new File(strFieldSearchDir);
+            if (tmpf.exists() && tmpf.isDirectory())
+                directoryChooserOfSource.setInitialDirectory(tmpf);
+            else
+                directoryChooserOfSource.setInitialDirectory(null);
+        }
+        else
+            this.directoryChooserOfSource.setInitialDirectory(null);
+        File selectedSearhDirectory = this.directoryChooserOfSource.showDialog(null);
+        if (selectedSearhDirectory != null)
+            this.textfieldSearchClass.setText(selectedSearhDirectory.getAbsolutePath());
     }
 
     public void buttonSearchDirClicked()
@@ -715,12 +768,234 @@ public class GJarScanController {
         this.buttonExecution.setDisable(true);
         this.listResult.getItems().clear();
         this.listResult.refresh();
-        searchClassFromJarFiles();
+        int indSel = searchType.getSelectionModel().getSelectedIndex();
+        if (indSel == -1)
+            return;
+        String selected = (String)searchType.getSelectionModel().getSelectedItem();
+        if (selected == null || selected.trim().length() != 0 && selected.equals(cnstSearchImports)) {
+            checkboxNoSearchList2.setSelected(true);
+            checkboxNoSearchList.setSelected(true);
+            searchSourceImportsJarFiles();
+        }
+        else
+            searchClassFromJarFiles();
         if( !this.bExecuted)
         {
             this.buttonCancelExecution.setDisable(true);
             this.buttonExecution.setDisable(false);
         }
+    }
+
+    private void searchSourceImportsJarFiles()
+    {
+        File fdir = new File(textfieldSearchDir.getText());
+        if (!fdir.exists())
+        {
+            labelMsg.setText("Dir " +fdir.getAbsolutePath() +"do not exists! No execution!");
+            return;
+        }
+
+        this.bExecuted = true;
+        this.listResult.getItems().clear();
+        this.buttonSearchResult.setDisable(true);
+        hmImportedJars.clear();
+        importJars.clear();
+
+        importTask = new Task<Integer>() {
+            @Override
+            protected Integer call() throws Exception {
+                searchSourceImportsJarFiles(fdir);
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("list result size: " +listResult.getItems().size());
+
+                        listResult.refresh();
+                        labelMsg.setText("All done!");
+                        buttonCancelExecution.setDisable(true);
+                    }});
+                super.succeeded();
+                return 0;
+            }
+
+            @Override
+            protected void succeeded() {
+                labelMsg.setText("All done1: ");
+               // this.buttonSearchResult.setDisable(false);
+                buttonExecution.setDisable(false);
+                bExecuted = false;
+            }
+
+            @Override
+            protected void cancelled() {
+                super.cancelled();
+                buttonExecution.setDisable(false);
+                bExecuted = false;
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        labelMsg.setText("User canceled the execution!");
+                    }});
+            }
+
+            @Override
+            protected void failed() {
+                super.failed();
+                // this.buttonSearchResult.setDisable(true);
+                bExecuted = false;
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        labelMsg.setText("The execution failed!");
+                    }});
+            }
+        };
+
+        Thread th = new Thread(importTask);
+        th.setDaemon(true);
+        th.start();
+    }
+
+    private void searchSourceImportsJarFiles(File dir)
+            throws InterruptedException, IOException
+    {
+        File [] sources, subdirs;
+        String name;
+
+        File [] arrSources = dir.listFiles(sourcefilefilter);
+        for(File f : arrSources) {
+            searchFromSouceImportsInJarFiles(f);
+        }
+
+        File [] arrSubDirs = dir.listFiles(new FileFilter() {
+            @Override
+            public boolean accept(File file) {
+                return file.isDirectory();
+            }
+        });
+
+        for(File dir2 : arrSubDirs) {
+                searchSourceImportsJarFiles(dir2);
+        }
+    }
+
+    private static String getSourceText(File f)
+    {
+        StringBuilder contentBuilder = new StringBuilder();
+
+        try (Stream<String> stream = Files.lines( Paths.get(f.getAbsolutePath()), StandardCharsets.UTF_8))
+        {
+            stream.forEach(s -> contentBuilder.append(s).append("\n"));
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+            return null;
+        }
+
+        return contentBuilder.toString();
+    }
+
+    private void searchFromSouceImportsInJarFiles(File f)
+            throws InterruptedException, IOException
+    {
+        if (Main.bDebug)
+            System.out.println("searchFromSouceImportsInJarFiles");
+        if (f == null || !f.exists())
+            return;
+
+        String strSource = getSourceText(f);
+        if (strSource == null || strSource.trim().length() == 0)
+            return;
+        Pattern p = null;
+        Matcher m = null;
+        int indComment = -1;
+        String strLine = null;
+        StringBuffer sb = new StringBuffer();
+        try {
+            p = Pattern.compile("($.*?)import\\s+(.*?)(;*\\s*\n)", Pattern.DOTALL | Pattern.MULTILINE); // either this: ^\d+\).*\][\n\r]
+            m = p.matcher(strSource);
+            boolean find = m.find();
+            String strClass = null;
+            int iGroup = -1, max = m.groupCount();
+            while (find) {
+                strClass = m.group(2);
+                strLine = m.group(1);
+                if (strClass == null || strClass.trim().length() == 0)
+                {
+                    find = m.find();
+                    continue;
+                }
+
+                if (strClass.startsWith("java.") || strClass.startsWith("javafx.") || strClass.startsWith("javax."))
+                {
+                    find = m.find();
+                    continue;
+                }
+                if (strLine != null)
+                {
+                    indComment = strLine.indexOf("//");
+                    if (indComment > -1)
+                    {
+                        find = m.find();
+                        continue;
+                    }
+                }
+                System.out.println("class=" +strClass);
+                startCLassSearchFrom(strClass);
+                find = m.find();
+            }
+            /*
+        }catch (Exception e) {
+            e.printStackTrace();
+             */
+        }finally {
+        }
+    }
+
+    private void startCLassSearchFrom(String strClass)
+            throws InterruptedException, IOException
+    {
+        String search = strClass;
+        String strSearchType = "-class";
+        if (strClass.endsWith(".*")) {
+            int ind = strClass.lastIndexOf(".*");
+            if (ind > -1) {
+                search = strClass.substring(0, ind);
+                strSearchType = "-package";
+            }
+        }
+
+        String strSearch = strClass;
+        if (strSearch == null || strSearch.trim().length() == 0) {
+            labelMsg.setText("Search class field is emty or contains space. Not executed.");
+            makeBeep();
+            return;
+        }
+
+        StringBuffer sb = new StringBuffer();
+        String strDir = textfieldSearchDir.getText();
+        File fdir = new File(strDir);
+        if (!fdir.exists())
+        {
+            labelMsg.setText("Search dir does not exists!");
+            makeBeep();
+            return;
+        }
+
+        sb.append("-dir " +strDir);
+        sb.append(" " +strSearchType);
+        sb.append(" " +search);
+
+        if (this.checkboxZip.isSelected())
+            sb.append(" " + this.checkboxZip.getText());
+        if (!this.checkboxNoSearchList2.isSelected() && this.checkboxNoSearchList.isSelected())
+            sb.append(" " + this.checkboxNoSearchList.getText());
+        if (this.checkboxNosubdir.isSelected())
+            sb.append(" " + this.checkboxNosubdir.getText());
+
+        String strExecDir = new String(".");
+        executeSearchFromGivenJarFilesWithOutTask(strExecDir, sb.toString());
     }
 
     public void buttonCancelExecutionClicked()
@@ -738,7 +1013,13 @@ public class GJarScanController {
     {
         if (Main.bDebug)
             System.out.println("cancelExection");
-        processes.cancelProcess();
+        String selected = (String) searchType.getSelectionModel().getSelectedItem();
+        if (selected == null || selected.trim().length() == 0)
+            return;
+        if (selected.equals(cnstSearchImports))
+            importTask.cancel(true);
+        else
+            processes.cancelProcess();
         this.bExecuted = false;
     }
 
@@ -805,28 +1086,6 @@ public class GJarScanController {
             return;
         }
 
-        String strSearch = this.textfieldSearchClass.getText();
-        if (strSearch == null || strSearch.trim().length() == 0)
-        {
-            labelMsg.setText("Search class field is emty or contains space. Not executed.");
-            this.bExecuted = false;
-            makeBeep();
-            return;
-        }
-        if (strSearch.contains("/"))
-            strSearch = strSearch.replaceAll("/", "\\.");
-
-        if (strDir.contains("%"))
-            strDir = getPossilbleEnvironmentVariableValue(strDir);
-
-        if (strDir == null || strDir.trim().length() == 0)
-        {
-            labelMsg.setText("Search directory %ENV_VARIABLE% is emty or contains space. Not executed.");
-            this.bExecuted = false;
-            makeBeep();
-            return;
-        }
-
         File fileTest = new File(strDir);
         if (!fileTest.exists())
         {
@@ -834,6 +1093,7 @@ public class GJarScanController {
             makeBeep();
             return;
         }
+
         if (!fileTest.isDirectory())
         {
             labelMsg.setText("This '" +fileTest.getAbsolutePath() +"' file is not a directory. Executon canceled.");
@@ -843,7 +1103,7 @@ public class GJarScanController {
 
         sb.append("-dir " +strDir);
         sb.append(" " +searchType.getSelectionModel().getSelectedItem().toString());
-        sb.append(" " +strSearch);
+        sb.append(" " +textfieldSearchClass.getText());
 
         if (this.checkboxZip.isSelected())
             sb.append(" " + this.checkboxZip.getText());
@@ -927,6 +1187,7 @@ public class GJarScanController {
         ret = list.toArray(ret);
         return ret;
     }
+
     private void executeSearchFromGivenJarFiles(String strWorkingDir, String strExecute) {
         if (Main.bDebug)
         {
@@ -1042,6 +1303,173 @@ public class GJarScanController {
             this.listResult.getItems().addAll(sbResult.toString().split("(\n|$)"));
             this.bExecuted = false;
         }
+    }
+
+    private String [] getOnlyNewJarsInImportJars(String [] arrInput)
+    {
+        String [] ret = null;
+        if (arrInput == null || arrInput.length == 0)
+            return null;
+        StringBuffer sb = new StringBuffer();
+        int ind = -1;
+        final String cnstClass = "Class:";
+        final String cnstLibraryName = "Library Path:";
+        final String cnstPackage = "Package:";
+        String jarPath = null, jarBaseName = null;
+        File jarFile = null;
+        List<String> addJarPaths = new ArrayList<String>();
+        String strClass = null;
+        String strPackage = null;
+        int indClass = -1, indPackage = -1;
+
+        for (String s : arrInput)
+        {
+            if (s == null || s.trim().length() == 0)
+                continue;
+            indClass = s.indexOf(cnstClass);
+            if (indClass > -1)
+                strClass = s.substring(indClass +cnstClass.length() +1 );
+            indPackage = s.indexOf(cnstPackage);
+            if (indPackage > -1)
+                strPackage = s.substring(indPackage +cnstPackage.length() +1 );
+            ind = s.indexOf(cnstLibraryName);
+            jarPath = null;
+            if (ind > -1) {
+                jarPath = s.substring(ind +cnstLibraryName.length() + 1);
+                jarPath = jarPath.replaceAll("\n","").replaceAll("\r","");
+                jarFile = new File(jarPath);
+                jarBaseName = jarFile.getName();
+                if (hmImportedJars.containsKey(jarBaseName))
+                    continue;
+                hmImportedJars.put(jarBaseName, jarFile);
+                if (strClass != null)
+                    addJarPaths.add(cnstClass +" " +strClass);
+                else
+                    addJarPaths.add(cnstPackage +" " +strPackage);
+                addJarPaths.add(cnstLibraryName +" " +jarPath);
+            }
+        }
+        ret = new String[addJarPaths.size()];
+        ret = addJarPaths.toArray(ret);
+        if (ret.length == 0)
+            return null;
+        return ret;
+    }
+    private void executeSearchFromGivenJarFilesWithOutTask(String strWorkingDir, String strExecute)
+            throws InterruptedException, IOException
+    {
+        if (Main.bDebug)
+        {
+            System.out.println("executeSearchFromGivenJarFilesWithOutTask");
+            System.out.println("strExecute=" + strExecute);
+        }
+
+        final StringBuffer sbResult = new StringBuffer();
+
+        System.out.println("done:" /* + t.getSource().getValue() */);
+        JarScanProcesses service = new JarScanProcesses();
+        // service.setExecutionData(strWorkingDir, strExecute);
+        // try {
+            String arrValue = service.runJava(strWorkingDir, strExecute);
+            int exitvalue = service.getExitValue();
+            if (exitvalue != 0) {
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        labelMsg.setText("Error.");
+                        isJarScanSearchOk.setBoolean(false);
+                        if ((arrValue == null || arrValue.equals(""))
+                                && service.getErrorString() != null) {
+                            listResult.getItems().addAll(getListResultData(service.getErrorString().split("(\n|$)")));
+                        } else
+                            listResult.getItems().addAll(getListResultData(((String) arrValue).split("(\n|$)")));
+                        }
+                    });
+            } else {
+                isJarScanSearchOk.setBoolean(true);
+                Platform.runLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (arrValue instanceof String) {
+                            String strSplit = new String(((String) arrValue) + "\n");
+                            strSplit = getNormalResult(strSplit);
+                            String[] arrListRows = getSplittedArray(strSplit, "\n");
+                            String[] arrListRows2 = getOnlyNewJarsInImportJars(arrListRows);
+                            if (arrListRows2 == null || arrListRows2.length == 0)
+                                return;
+                            listResult.getItems().addAll(getListResultData(arrListRows2));
+                        } else
+                            listResult.getItems().add(new ListResultData(arrValue.toString()));
+                    }
+                });
+              //  labelMsg.setText("Done.");
+            }
+            /*
+        }catch (InterruptedException ie){
+            labelMsg.setText("User interrupted the execution!");
+            bExecuted = false;
+        }catch (IOException ioe){
+            ioe.printStackTrace();
+            labelMsg.setText(ioe.getMessage());
+            bExecuted = false;
+        }
+             */
+        //listResult.getItems().addAll(strResult.split("(\n|$)"));
+
+    /*
+                    System.out.println("failed:");
+                    if (bProssesRestarted)
+                        return;
+                    isJarScanSearchOk.setBoolean(false);
+                    listResult.getItems().clear();
+                    Object arrValue = t.getSource().getValue();
+                    if (arrValue != null)
+                        listResult.getItems().addAll(new ListResultData(arrValue.toString()));
+                    labelMsg.setText("Failed.");
+                    //listResult.getItems().addAll(strResult.split("\n"));
+                    buttonExecution.setDisable(false);
+                    buttonCancelExecution.setDisable(true);
+                    bExecuted = false;
+                    if (listResult.getItems().size() > 0)
+                        buttonSearchResult.setDisable(false);
+                }
+
+                    System.out.println("canceled:");
+                    if (bProssesRestarted)
+                        return;
+                    isJarScanSearchOk.setBoolean(false);
+                    listResult.getItems().clear();
+                    Object arrValue = t.getSource().getValue();
+                    if (arrValue != null) {
+                        listResult.getItems().clear();
+                        listResult.getItems().addAll(new ListResultData(arrValue.toString()));
+                    }
+                    labelMsg.setText("Canceled.");
+                    //listResult.getItems().addAll(strResult.split("\n"));
+                    buttonExecution.setDisable(false);
+                    buttonCancelExecution.setDisable(true);
+                    bExecuted = false;
+                    if (listResult.getItems().size() > 0)
+                        buttonSearchResult.setDisable(false);
+                }
+
+            this.processes.setExecutionData(strWorkingDir, strExecute);
+            // test buttons: Thread.sleep(10000);
+            if (this.processes.getState() != Worker.State.READY) {
+                this.bProssesRestarted = true; // this boolean variable into true, because to prevent
+                // of extra call below:
+                this.processes.restart(); // restart causes an extra call into onsuccess etc
+                bProssesRestarted = false; // after an extra handler catt, after this can do "normal" handler call
+            }
+            else
+                this.processes.start();
+            // strResult = processes.run(strWorkingDir, strExecute);
+        }catch (Exception e){
+            e.printStackTrace();
+            sbResult.append(e.toString() +"\n\n errorlevel " +processes.getExitValue() +"\n\n" +processes.getErrorString());
+            this.listResult.getItems().addAll(sbResult.toString().split("(\n|$)"));
+        }
+     */
     }
 
     private String getNormalResult(String strResult)
@@ -1205,36 +1633,36 @@ public class GJarScanController {
         });
     }
 
-    private String getClassValue(String duppelClickedItem)
+    private String getClassValue(String dualClickedItem)
     {
         String ret = null;
-        if (duppelClickedItem == null)
+        if (dualClickedItem == null)
             return null;
-        if (duppelClickedItem.trim().length() == 0)
+        if (dualClickedItem.trim().length() == 0)
             return null;
         final String strClass = "Class:";
-        if (!duppelClickedItem.trim().startsWith(strClass))
+        if (!dualClickedItem.trim().startsWith(strClass))
             return null;
-        ret = duppelClickedItem.replace(strClass, "").trim();
+        ret = dualClickedItem.replace(strClass, "").trim();
         return ret;
     }
 
-    private String getJarPathValue(String duppelClickedItem)
+    private String getJarPathValue(String dualClickedItem)
     {
         String ret = null;
-        if (duppelClickedItem == null)
+        if (dualClickedItem == null)
             return null;
-        if (duppelClickedItem.trim().length() == 0)
+        if (dualClickedItem.trim().length() == 0)
             return null;
-        if (!duppelClickedItem.toLowerCase().contains(".jar"))
+        if (!dualClickedItem.toLowerCase().contains(".jar"))
             return null;
         final String strLibPath = "Library Path:";
-        if (!duppelClickedItem.contains(strLibPath))
+        if (!dualClickedItem.contains(strLibPath))
             return null;
         String pathSeparator = "" +File.separatorChar;
-        if (!duppelClickedItem.toLowerCase().contains(pathSeparator))
+        if (!dualClickedItem.toLowerCase().contains(pathSeparator))
             return null;
-        ret = duppelClickedItem.replaceAll(strLibPath, "").trim();
+        ret = dualClickedItem.replaceAll(strLibPath, "").trim();
         return ret;
     }
 
