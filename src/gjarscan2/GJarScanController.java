@@ -42,6 +42,17 @@ import java.util.regex.PatternSyntaxException;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.AudioSystem;
+class SourceComment {
+
+    public SourceComment(int p_start, int p_end)
+    {
+        start = p_start;
+        end = p_end;
+    }
+
+    public final int start;
+    public final int end;
+}
 
 public class GJarScanController {
 
@@ -896,6 +907,37 @@ public class GJarScanController {
         return contentBuilder.toString();
     }
 
+    private SourceComment [] getSourceComments(String strSource)
+    {
+        if (strSource == null || strSource.trim().length() == 0)
+            return null;
+        final String cntStartComment = "/*";
+        final String cntEndComment = "*/";
+        SourceComment [] ret = null;
+        int indStart = strSource.indexOf(cntStartComment);
+        if (indStart == -1)
+            return null;
+        int indEnd = strSource.indexOf(cntEndComment, indStart);
+        if (indEnd == -1)
+            return null; // slmost impossible !
+
+        List<SourceComment> list = new ArrayList<SourceComment>();
+        SourceComment comment = null;
+        while (indStart > -1 && indEnd > -1)
+        {
+            comment = new SourceComment(indStart, indEnd);
+            list.add(comment);
+            indStart = strSource.indexOf(cntStartComment, indEnd);
+            if (indStart == -1)
+                indEnd = -1;
+            else
+                indEnd = strSource.indexOf(cntEndComment, indStart);
+        }
+        ret = new SourceComment[list.size()];
+        ret = list.toArray(ret);
+        return ret;
+    }
+
     private void searchFromSouceImportsInJarFiles(File f)
             throws InterruptedException, IOException
     {
@@ -905,6 +947,8 @@ public class GJarScanController {
             return;
 
         String strSource = getSourceText(f);
+        // dddd
+        SourceComment [] sourceComments = getSourceComments(strSource);
         if (strSource == null || strSource.trim().length() == 0)
             return;
         Pattern p = null;
@@ -917,10 +961,12 @@ public class GJarScanController {
             m = p.matcher(strSource);
             boolean find = m.find();
             String strClass = null;
-            int iGroup = -1, max = m.groupCount();
+            int iGroup = -1, max = m.groupCount(), iStart, iEnd;
             while (find) {
                 strClass = m.group(2);
                 strLine = m.group(1);
+                iStart = m.start();
+                iEnd = m.end();
                 if (strClass == null || strClass.trim().length() == 0)
                 {
                     find = m.find();
@@ -941,6 +987,20 @@ public class GJarScanController {
                         continue;
                     }
                 }
+
+                // search if import is inside of a comment:
+                if (sourceComments != null)
+                for (SourceComment sc : sourceComments)
+                {
+                    if (sc == null)
+                        continue;
+                    if (sc.start < iStart && sc.end > iEnd)
+                    {
+                        find = m.find();
+                        continue;
+                    }
+                }
+
                 System.out.println("class=" +strClass);
                 startCLassSearchFrom(strClass);
                 find = m.find();
