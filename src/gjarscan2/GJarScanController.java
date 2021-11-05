@@ -213,6 +213,8 @@ public class GJarScanController {
     @FXML
     Button buttonSearchDir;
     @FXML
+    Button buttonM2HomeDir;
+    @FXML
     TextField textfieldSearchDir;
     @FXML
     GridPane gridpane;
@@ -464,24 +466,46 @@ public class GJarScanController {
             this.textfieldSearchClass.setText(selectedSearhDirectory.getAbsolutePath());
     }
 
-    public void buttonSearchDirClicked()
+    public void buttonM2HomeDirClicked()
     {
+        String m2home = System.getenv("M2_HOME");
+        setSearchText(m2home);
+    }
+
+    private void setSearchText(String m2hometext)
+    {
+        boolean bH2HomeSet = false;
         if (Main.bDebug)
             System.out.println("buttonSearchDirClicked");
-        String strFieldSearchDir = this.textfieldSearchDir.getText();
-        if (strFieldSearchDir != null && strFieldSearchDir.trim().length() != 0)
-        {
-            File tmpf = new File(strFieldSearchDir);
-            if (tmpf.exists() && tmpf.isDirectory())
+        if (m2hometext != null) {
+            File tmpf = new File(m2hometext);
+            if (tmpf.exists() && tmpf.isDirectory()) {
                 this.directoryChooser.setInitialDirectory(tmpf);
+                bH2HomeSet = true;
+            }
             else
                 this.directoryChooser.setInitialDirectory(null);
         }
-        else
-            this.directoryChooser.setInitialDirectory(null);
+
+        if (!bH2HomeSet) {
+            String strFieldSearchDir = this.textfieldSearchDir.getText();
+            if (strFieldSearchDir != null && strFieldSearchDir.trim().length() != 0) {
+                File tmpf = new File(strFieldSearchDir);
+                if (tmpf.exists() && tmpf.isDirectory())
+                    this.directoryChooser.setInitialDirectory(tmpf);
+                else
+                    this.directoryChooser.setInitialDirectory(null);
+            } else
+                this.directoryChooser.setInitialDirectory(null);
+        }
         selectedSearhDirectory = this.directoryChooser.showDialog(null);
         if (selectedSearhDirectory != null)
             this.textfieldSearchDir.setText(selectedSearhDirectory.getAbsolutePath());
+    }
+
+    public void buttonSearchDirClicked()
+    {
+        setSearchText(null);
     }
 
     private class ListResultData {
@@ -1717,10 +1741,15 @@ public class GJarScanController {
         if (!dualClickedItem.toLowerCase().contains(".jar"))
             return null;
         final String strLibPath = "Library Path:";
-        if (!dualClickedItem.contains(strLibPath))
+        /*
+        final String strClass = "Class:";
+        if (!dualClickedItem.contains(strLibPath) && !dualClickedItem.contains(strClass))
             return null;
+        if (dualClickedItem.contains(strClass))
+            strLibPath = strClass;
+         */
         String pathSeparator = "" +File.separatorChar;
-        if (!dualClickedItem.toLowerCase().contains(pathSeparator))
+        if (/* !dualClickedItem.contains(strClass) && */ !dualClickedItem.toLowerCase().contains(pathSeparator))
             return null;
         ret = dualClickedItem.replaceAll(strLibPath, "").trim();
         return ret;

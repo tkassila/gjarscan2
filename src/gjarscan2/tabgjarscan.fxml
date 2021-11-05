@@ -14,7 +14,7 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="670.0" prefWidth="782.0" xmlns="http://javafx.com/javafx/16" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="670.0" prefWidth="782.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <SplitPane fx:id="splitPaneResult" dividerPositions="0.5" layoutX="15.0" layoutY="15.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" orientation="VERTICAL" prefHeight="528.0" prefWidth="529.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <items>
@@ -27,6 +27,7 @@
                               <HBox prefHeight="30.0" spacing="10.0">
                                  <children>
                                     <Button fx:id="buttonSearchDir" mnemonicParsing="false" onAction="#buttonSearchDirClicked" prefHeight="26.0" prefWidth="124.0" text="Select search dir" />
+                                    <Button fx:id="buttonM2HomeDir" layoutX="15.0" layoutY="15.0" mnemonicParsing="false" onAction="#buttonM2HomeDirClicked" prefHeight="26.0" prefWidth="99.0" text="Use M2_HOME" />
                                     <TextField fx:id="textfieldSearchDir" maxWidth="1.7976931348623157E308" prefHeight="26.0" HBox.hgrow="ALWAYS" />
                                  </children>
                                  <padding>
@@ -100,7 +101,7 @@
                      <children>
                         <HBox fillHeight="false" maxHeight="-Infinity" maxWidth="1.7976931348623157E308" prefHeight="20.0" VBox.vgrow="ALWAYS">
                            <children>
-                              <Label maxHeight="-Infinity" maxWidth="1.7976931348623157E308" prefHeight="17.0" text="Result (mouse dual click into library path row in result to copy it into clipboard):">
+                              <Label maxHeight="-Infinity" maxWidth="1.7976931348623157E308" prefHeight="17.0" text="Result (mouse dual click into Library Path: or Class: -row in the result list to copy it into clipboard):">
                                  <font>
                                     <Font name="System Bold" size="12.0" />
                                  </font>
