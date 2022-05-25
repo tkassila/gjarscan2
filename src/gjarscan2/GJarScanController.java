@@ -262,6 +262,8 @@ public class GJarScanController {
     VBox anchorPaneLower;
     @FXML
     Button buttonSourceRootDir;
+    @FXML
+    Button buttonCopyListIntoClipboard;
 
     private boolean bProssesRestarted = false;
     private volatile boolean bExecuted = false;
@@ -445,6 +447,27 @@ public class GJarScanController {
        // buttonSearchDirClicked();
     }
 
+    private String getContentOfListView()
+    {
+        String line;
+        StringBuffer sb = new StringBuffer();
+        for(Object objItem : this.listResult.getItems()) {
+            line = objItem.toString();
+            sb.append("" + line + "\n");
+        }
+        return sb.toString();
+    }
+    public void pressed_buttonCopyListIntoClipboard()
+    {
+        System.out.println("pressed_buttonCopyListIntoClipboard");
+        String strCopyClipboard = getContentOfListView();
+        Toolkit.getDefaultToolkit()
+                .getSystemClipboard()
+                .setContents(
+                        new StringSelection(strCopyClipboard),
+                        null
+                );
+    }
     @FXML
     public void buttonSourceRootDirPressed()
     {

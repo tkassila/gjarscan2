@@ -1,0 +1,1 @@
+\java\putty\pscp.exe tk@172.24.212.27:/home/tk/tabgjarscan.fxml ./tabgjarscan.fxml

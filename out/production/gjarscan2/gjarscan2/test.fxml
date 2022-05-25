@@ -14,13 +14,13 @@
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="670.0" prefWidth="936.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="670.0" prefWidth="782.0" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1">
    <children>
       <SplitPane fx:id="splitPaneResult" dividerPositions="0.5" layoutX="15.0" layoutY="15.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" orientation="VERTICAL" prefHeight="528.0" prefWidth="529.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         <items>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="325.0" prefWidth="874.0">
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                <children>
-                  <VBox fx:id="anchorPaneUppder" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                  <VBox fx:id="anchorPaneUppder" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" AnchorPane.bottomAnchor="77.77777777777777" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="-206.22222222222229" AnchorPane.topAnchor="0.0">
                      <children>
                         <TitledPane text="Parent dir (or environment value like %HOME_JAVA%)">
                            <content>
@@ -62,7 +62,6 @@
                                  <children>
                                     <Button fx:id="buttonExecution" defaultButton="true" maxWidth="-Infinity" mnemonicParsing="false" onAction="#buttonExecutionClicked" prefHeight="25.0" prefWidth="170.0" text="Start Class Search from jars" HBox.hgrow="NEVER" />
                                     <Button fx:id="buttonCancelExecution" mnemonicParsing="false" onAction="#buttonCancelExecutionClicked" text="Cancel execution" />
-                                    <Button fx:id="buttonCopyListIntoClipboard" mnemonicParsing="false" onAction="#pressed_buttonCopyListIntoClipboard" text="Copy list rows into clipboard" />
                                  </children>
                                  <padding>
                                     <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
@@ -96,11 +95,11 @@
                   </VBox>
                </children>
             </AnchorPane>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="325.0" prefWidth="872.0">
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="100.0" prefWidth="160.0">
                <children>
-                  <VBox fx:id="anchorPaneLower" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" prefHeight="326.0" prefWidth="926.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="-2.0" AnchorPane.topAnchor="0.0">
+                  <VBox fx:id="anchorPaneLower" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                      <children>
-                        <HBox fillHeight="false" maxHeight="-Infinity" maxWidth="1.7976931348623157E308" prefHeight="32.0" prefWidth="848.0" VBox.vgrow="ALWAYS">
+                        <HBox fillHeight="false" maxHeight="-Infinity" maxWidth="1.7976931348623157E308" prefHeight="20.0" VBox.vgrow="ALWAYS">
                            <children>
                               <Label maxHeight="-Infinity" maxWidth="1.7976931348623157E308" prefHeight="17.0" text="Result (mouse dual click into Library Path: or Class: -row in the result list to copy it into clipboard):">
                                  <font>

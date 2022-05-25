@@ -199,7 +199,7 @@ public class Main extends Application {
     public void start(Stage primaryStage) throws Exception{
         Parent root = FXMLLoader.load(getClass().getResource("gjarscan2.fxml"));
         primaryStage.setTitle("Search a class inside of jar or .zip files");
-        Scene scene = new Scene(root, 950, 640);
+        Scene scene = new Scene(root, 1170, 640);
         // Scene scene = new Scene(root);
         primaryStage.setScene(scene);
         primaryStage.show();
