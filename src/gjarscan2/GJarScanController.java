@@ -1,7 +1,8 @@
 package gjarscan2;
 
-import javafx.concurrent.Task;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Worker;
@@ -9,57 +10,40 @@ import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.*;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.util.Callback;
 import javafx.scene.text.Font;
 
-import java.util.HashMap;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.stream.Stream;
-import java.nio.charset.StandardCharsets;
-import java.io.FileFilter;
+import java.io.*;
+import java.util.*;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
-import java.io.File;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.regex.PatternSyntaxException;
+import java.util.stream.Collectors;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.AudioSystem;
-class SourceComment {
-
-    public SourceComment(int p_start, int p_end)
-    {
-        start = p_start;
-        end = p_end;
-    }
-
-    public final int start;
-    public final int end;
-}
 
 public class GJarScanController {
 
-    private static final String cnstSearchImports = "-search_imports";
-
+    private static final String NEWLINE = System.getProperty("line.separator");
     private ObservableList<String> searchTypeList = FXCollections.observableArrayList(
-            "-class", "-package", "-files", cnstSearchImports
+      "-class", "-package", "-files"
     );
 
     static final int ROW_HEIGHT = 20;
@@ -213,8 +197,6 @@ public class GJarScanController {
     @FXML
     Button buttonSearchDir;
     @FXML
-    Button buttonM2HomeDir;
-    @FXML
     TextField textfieldSearchDir;
     @FXML
     GridPane gridpane;
@@ -260,21 +242,15 @@ public class GJarScanController {
     VBox anchorPaneUppder;
     @FXML
     VBox anchorPaneLower;
-    @FXML
-    Button buttonSourceRootDir;
-    @FXML
-    Button buttonCopyListIntoClipboard;
 
     private boolean bProssesRestarted = false;
-    private volatile boolean bExecuted = false;
+    private boolean bExecuted = false;
     private final JarScanProcesses processes = new JarScanProcesses();
-    private Task<Integer> importTask = null;
     final ObservableList listResultItems = FXCollections.observableArrayList("1", "2", "3");
-    private String currentDualClickedItem = null;
+    private String currentDuppelClickedItem = null;
     private Double dZeroDiverPosition = null;
     private Double dHalfDiverPosition = null;
     private DirectoryChooser directoryChooser = new DirectoryChooser();
-    private DirectoryChooser directoryChooserOfSource = new DirectoryChooser();
     private File selectedSearhDirectory = null;
     private ListResultData [] arrResultTextRows = null;
     private ResultTextPosition [] arrSearchResults = null;
@@ -282,9 +258,6 @@ public class GJarScanController {
     private ResultTextPosition firstResultTextPosition = null;
     private ResultTextPosition lastResultTextPosition =  null;
     private int iIndextitledPaneSearhFromResult = -1;
-    private ExtensionsFilter sourcefilefilter = new ExtensionsFilter(new String[] {".java", ".groovy",".kt", ".scala"});
-    private HashMap<String,File> hmImportedJars = new HashMap<String,File>();
-    private List<ListResultData> importJars = new ArrayList<ListResultData>();
 
     @FXML
     public void initialize() {
@@ -293,27 +266,7 @@ public class GJarScanController {
         System.out.println("java.version=" +System.getProperty("java.version"));
         System.out.println("javafx.version=" +System.getProperty("javafx.version"));
 
-        buttonSourceRootDir.setDisable(true);
-
-        searchType.getSelectionModel().selectedItemProperty().addListener((options, oldValue, newValue) -> {
-            System.out.println(newValue);
-            String strValue = (String) newValue;
-            if (strValue != null && strValue.equals(cnstSearchImports))
-            {
-                buttonSourceRootDir.setDisable(false);
-                textfieldSearchClass.setText("");
-                if (textfieldSearchDir.getText().trim().length() > 0)
-                    textfieldSearchClass.setText(textfieldSearchDir.getText());
-                else
-                    textfieldSearchClass.setText("");
-            }
-            else
-                buttonSourceRootDir.setDisable(true);
-        });
-
-        directoryChooserOfSource.setTitle("Select source root directory");
-
-        //  this.listResult.setFont(defaultFont);
+      //  this.listResult.setFont(defaultFont);
 
         Platform.runLater(new Runnable() {
             @Override
@@ -326,7 +279,7 @@ public class GJarScanController {
         this.listResult.setFixedCellSize(30);
         this.listResult.setStyle("-fx-font-size: 16px");
         this.buttonCancelExecution.setDisable(true);
-        this.textfieldSearhFromResult.setText(" start =");
+        this.textfieldSearhFromResult.setText(" start");
        // this.buttonExecution.setDisable(true);
         this.buttonNext.setDisable(true);
         this.buttonPrevious.setDisable(true);
@@ -341,7 +294,7 @@ public class GJarScanController {
                      ) ) {
          */
 
-        this.directoryChooser.setTitle("Select jar search direcotory");
+        this.directoryChooser.setTitle("Select jar search directory");
 
         this.listResult.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
@@ -349,34 +302,85 @@ public class GJarScanController {
                 if (event.getButton() == MouseButton.PRIMARY
                         && event.getClickCount() == 2 )
                 {
-                    currentDualClickedItem = null;
+                    currentDuppelClickedItem = null;
                     Object selected = listResult.getSelectionModel().getSelectedItem();
                     if (selected != null) {
                         boolean bJarPathSeeked = true;
-                        currentDualClickedItem = getJarPathValue(selected.toString());
-                        if (currentDualClickedItem == null)
+                        currentDuppelClickedItem = getJarPathValue(selected.toString());
+                        if (currentDuppelClickedItem == null)
                         {
                             bJarPathSeeked = false;
-                            currentDualClickedItem = getClassValue(selected.toString());
+                            currentDuppelClickedItem = getClassValue(selected.toString());
                         }
-                        if (currentDualClickedItem != null) {
+                        if (currentDuppelClickedItem != null) {
                             Toolkit.getDefaultToolkit()
                                     .getSystemClipboard()
                                     .setContents(
-                                            new StringSelection(currentDualClickedItem),
+                                            new StringSelection(currentDuppelClickedItem),
                                             null
                                     );
                             if (bJarPathSeeked)
-                                labelMsg.setText("A jar file path copyed into clipboard");
+                                setLabelMsg("A jar file path copied into clipboard");
                             else
-                                labelMsg.setText("A class copyed into clipboard");
+                                setLabelMsg("A class copied into clipboard");
                         }
                         else
-                            labelMsg.setText("");
+                            setLabelMsg("");
                     }
 
                 }
-                //your code here
+                else
+                if (event.getButton() == MouseButton.SECONDARY
+                        && event.getClickCount() == 1 ) {
+                    // System.out.println("second button clie");
+                    Object selected = listResult.getSelectionModel().getSelectedItem();
+                    if (selected != null) {
+                        if (!isRighJarVersion()) {
+                            setLabelMsg("You have not the right java version >= java 9 and after!");
+                            return;
+                        }
+
+                        boolean bJarPathSeeked = true;
+                        currentDuppelClickedItem = getJarPathValue(selected.toString());
+                        if (currentDuppelClickedItem != null) {
+                            String strScanModuleName = getScanModuleName(currentDuppelClickedItem, false);
+                            if (strScanModuleName != null && strScanModuleName.trim().length()>0)
+                            {
+                                Platform.runLater(new Runnable() {
+                                    @Override
+                                    public void run() {
+
+                                        Dialog<String> dialog = new Dialog<String>();
+                                        //Setting the title
+                                        dialog.setTitle("Describe module name in selected jar");
+                                        ButtonType type = new ButtonType("Close", ButtonType.NO.getButtonData());
+                                        //Setting the content of the dialog
+                                        TextArea ta = new TextArea(strScanModuleName);
+                                        ta.setEditable(false);
+                                        Pane pane = new Pane();
+                                        pane.getChildren().add(ta);
+                                        ScrollPane sp = new ScrollPane(ta);
+                                        sp.setContent(pane);
+                                        dialog.getDialogPane().setContent(sp);
+                                        //Adding buttons to the dialog pane
+                                        dialog.getDialogPane().getButtonTypes().add(type);
+                                        //Setting the label
+                                        // Text txt = new Text("Click the button to show the dialog");
+                                        // Font font = Font.font("verdana", FontWeight.BOLD, FontPosture.REGULAR, 12);
+                                        // txt.setFont(font);
+                                        dialog.showAndWait();
+                                        //Creating a vbox to hold the button and the label
+                                        // HBox pane = new HBox(15);
+                                        //Setting the space between the nodes of a HBox pane
+                                        // pane.setPadding(new Insets(50, 150, 50, 60));
+                                        // pane.getChildren().addAll(txt, button);
+
+                                    }
+                                });
+                            }
+                        }
+                    }
+                }//your code here
             }
         });
 
@@ -447,88 +451,172 @@ public class GJarScanController {
        // buttonSearchDirClicked();
     }
 
-    private String getContentOfListView()
+    private boolean isRighJarVersion()
     {
-        String line;
-        StringBuffer sb = new StringBuffer();
-        for(Object objItem : this.listResult.getItems()) {
-            line = objItem.toString();
-            sb.append("" + line + "\n");
-        }
-        return sb.toString();
-    }
-    public void pressed_buttonCopyListIntoClipboard()
-    {
-        System.out.println("pressed_buttonCopyListIntoClipboard");
-        String strCopyClipboard = getContentOfListView();
-        Toolkit.getDefaultToolkit()
-                .getSystemClipboard()
-                .setContents(
-                        new StringSelection(strCopyClipboard),
-                        null
-                );
-    }
-    @FXML
-    public void buttonSourceRootDirPressed()
-    {
-        if (Main.bDebug)
-            System.out.println("buttonSourceRootDirPressed");
-        String strFieldSearchDir = textfieldSearchClass.getText();
-        if (strFieldSearchDir != null && strFieldSearchDir.trim().length() != 0)
+        String strScanModuleName = getScanModuleName(currentDuppelClickedItem, true);
+        if (strScanModuleName != null && strScanModuleName.trim().length()>0)
         {
-            File tmpf = new File(strFieldSearchDir);
-            if (tmpf.exists() && tmpf.isDirectory())
-                directoryChooserOfSource.setInitialDirectory(tmpf);
-            else
-                directoryChooserOfSource.setInitialDirectory(null);
-        }
-        else
-            this.directoryChooserOfSource.setInitialDirectory(null);
-        File selectedSearhDirectory = this.directoryChooserOfSource.showDialog(null);
-        if (selectedSearhDirectory != null)
-            this.textfieldSearchClass.setText(selectedSearhDirectory.getAbsolutePath());
-    }
-
-    public void buttonM2HomeDirClicked()
-    {
-        String m2home = System.getenv("M2_HOME");
-        setSearchText(m2home);
-    }
-
-    private void setSearchText(String m2hometext)
-    {
-        boolean bH2HomeSet = false;
-        if (Main.bDebug)
-            System.out.println("buttonSearchDirClicked");
-        if (m2hometext != null) {
-            File tmpf = new File(m2hometext);
-            if (tmpf.exists() && tmpf.isDirectory()) {
-                this.directoryChooser.setInitialDirectory(tmpf);
-                bH2HomeSet = true;
+            Pattern p = Pattern.compile("(?s)version\\s\"(\\d+\\.\\d+\\.\\d+)\"\\s",
+                    Pattern.DOTALL | Pattern.MULTILINE); // either this: ^\d+\).*\][\n\r]
+            Matcher m = p.matcher(strScanModuleName);
+            boolean find = m.find();
+            if (find)
+            {
+                String strVersion = m.group(1);
+                if (strVersion != null && strVersion.trim().length()>0)
+                {
+                    double dVersion = 0;
+                    try {
+                        int ind = strVersion.indexOf(".");
+                        if (ind > -1) {
+                            String strMainVersion = strVersion.substring(0, ind);
+                            dVersion = Double.parseDouble(strMainVersion);
+                            if (dVersion < 9)
+                                return false;
+                            return true;
+                        }
+                    }catch (Exception e){
+                        e.printStackTrace();
+                        return false;
+                    }
+                }
             }
-            else
-                this.directoryChooser.setInitialDirectory(null);
         }
+        return false;
+    }
 
-        if (!bH2HomeSet) {
-            String strFieldSearchDir = this.textfieldSearchDir.getText();
-            if (strFieldSearchDir != null && strFieldSearchDir.trim().length() != 0) {
-                File tmpf = new File(strFieldSearchDir);
-                if (tmpf.exists() && tmpf.isDirectory())
-                    this.directoryChooser.setInitialDirectory(tmpf);
-                else
-                    this.directoryChooser.setInitialDirectory(null);
-            } else
-                this.directoryChooser.setInitialDirectory(null);
+    private String getScanModuleName(String jarPath, boolean bExecJavaVersion)
+    {
+        String strMessage = null;
+        String ret = null;
+        if (jarPath != null || bExecJavaVersion)
+        {
+            Process process = null;
+            File jarfile = new File(".");
+            if (!bExecJavaVersion) {
+                jarfile = new File(jarPath);
+                if (!jarfile.exists())
+                    return null;
+            }
+            int exitValue = -1;
+            StringProperty result = new SimpleStringProperty();
+            result.setValue("");
+            StringBuffer sb = new StringBuffer();
+            StringBuilder resultError = new StringBuilder();
+            resultError = new StringBuilder(80);
+            String strCommand = "jar --describe-module --file " +jarfile.getAbsolutePath();
+            if (bExecJavaVersion)
+                strCommand = "java -version";
+
+            try {
+                if (Main.bDebug)
+                    System.out.println(System.getProperty("java.home"));
+                String strJavaHome = System.getProperty("java.home");
+                String classpath = System.getProperty("java.class.path");
+                classpath = JarScanProcesses.correctSpaceContainsClassPath(classpath);
+                // classpath = ""; // classpath.replaceAll("\n", "");
+                String javaBin = strJavaHome + File.separator + "bin" + File.separator + "";
+                List<String> jvmArgs = new ArrayList<String>();
+                String className = "com.inetfeedback.jarscan.JarScan21";
+               // String strUpdatedCommand = "java -version"; // strCommand;
+                String strUpdatedCommand = strCommand;
+                // java.bin does nost havve jar app:
+                if (javaBin != null && javaBin.length()>0)
+                   strUpdatedCommand = javaBin +strUpdatedCommand;
+                List<String> java_app_args = Arrays.asList(strUpdatedCommand.split(" "));
+                List<String> command = new ArrayList<String>();
+                // command.add(javaBin);
+                // command.addAll(jvmArgs);
+                // command.add("-cp");
+
+                // File workingDir = new File(".");
+                File workingDir = new File(javaBin);
+
+                String preCP = new String("." +JarScanProcesses.getClassPathSeparator());
+                // command.add(preCP +classpath);
+                // command.add(className);
+                command.addAll(java_app_args);
+
+                String line = null;
+                Map<java.lang.String, java.lang.String> mapEnv = System.getenv();
+                String [] arrEnv = new String[mapEnv.size()];
+                String value;
+                int i = 0;
+                for (String key : mapEnv.keySet())
+                {
+                    value = mapEnv.get(key);
+                    arrEnv[i] = "" +key +"=" +value;
+                    i++;
+                }
+                System.out.println(arrEnv.toString());
+                String strExec = command.stream().collect(Collectors.joining(" "));
+                // strExec = "C:\\java\\jdk1.8.0\\jre\\bin\\java -cp .;C:\\java\\project\\javafx\\gjarscan2\\out\\production\\gjarscan2;C:\\Users\\tkassila\\.IdeaIC2019.3\\system\\groovyHotSwap\\gragent.jar;C:\\Users\\tkassila\\.IdeaIC2019.3\\system\\captureAgent\\debugger-agent.jar com.inetfeedback.jarscan.JarScan21 -dir \\java\\project\\javafx\\gjarscan2 -class JarScan -donotask";
+                System.out.println(strExec);
+                process = Runtime.getRuntime().exec(strExec, arrEnv, workingDir);
+                final BufferedReader bri = new BufferedReader
+                        (new InputStreamReader(process.getInputStream()));
+                final BufferedReader bre = new BufferedReader
+                        (new InputStreamReader(process.getErrorStream()));
+                while ((line = bri.readLine()) != null) {
+                    System.out.println(line);
+                    if (!line.contains(NEWLINE))
+                        sb.append(line).append(NEWLINE);
+                    else
+                        sb.append(line);
+                }
+                while ((line = bre.readLine()) != null) {
+                    System.out.println(line);
+                    if (!line.contains(NEWLINE))
+                        resultError.append(line).append(NEWLINE);
+                    else
+                        resultError.append(line);
+                }
+                bri.close();
+                bre.close();
+                result.setValue(sb.toString());
+                exitValue = process.waitFor();
+                if (sb.toString().equals(""))
+                    result.setValue(resultError.toString());
+                ret = result.toString();
+                System.out.println("exitValue: " +process.exitValue());
+                // exitValue = process.exitValue();
+                System.out.println("Done.");
+                process.destroy();
+                process = null;
+            }
+            catch (IOException err) {
+                err.printStackTrace();
+                if (process != null)
+                     exitValue = process.exitValue();
+                strMessage = err.getMessage();
+                setLabelMsg("IO Error when get module name: " +strMessage);
+                process = null;
+            } catch (InterruptedException ie){
+                process = null;
+                setLabelMsg("Interrupted when get module name: " +ie.getMessage());
+            }
         }
-        selectedSearhDirectory = this.directoryChooser.showDialog(null);
-        if (selectedSearhDirectory != null)
-            this.textfieldSearchDir.setText(selectedSearhDirectory.getAbsolutePath());
+        return ret;
     }
 
     public void buttonSearchDirClicked()
     {
-        setSearchText(null);
+        if (Main.bDebug)
+            System.out.println("buttonSearchDirClicked");
+        String strFieldSearchDir = this.textfieldSearchDir.getText();
+        if (strFieldSearchDir != null && strFieldSearchDir.trim().length() != 0)
+        {
+            File tmpf = new File(strFieldSearchDir);
+            if (tmpf.exists() && tmpf.isDirectory())
+                this.directoryChooser.setInitialDirectory(tmpf);
+            else
+                this.directoryChooser.setInitialDirectory(null);
+        }
+        else
+            this.directoryChooser.setInitialDirectory(null);
+        selectedSearhDirectory = this.directoryChooser.showDialog(null);
+        if (selectedSearhDirectory != null)
+            this.textfieldSearchDir.setText(selectedSearhDirectory.getAbsolutePath());
     }
 
     private class ListResultData {
@@ -826,17 +914,7 @@ public class GJarScanController {
         this.buttonExecution.setDisable(true);
         this.listResult.getItems().clear();
         this.listResult.refresh();
-        int indSel = searchType.getSelectionModel().getSelectedIndex();
-        if (indSel == -1)
-            return;
-        String selected = (String)searchType.getSelectionModel().getSelectedItem();
-        if (selected == null || selected.trim().length() != 0 && selected.equals(cnstSearchImports)) {
-            checkboxNoSearchList2.setSelected(true);
-            checkboxNoSearchList.setSelected(true);
-            searchSourceImportsJarFiles();
-        }
-        else
-            searchClassFromJarFiles();
+        searchClassFromJarFiles();
         if( !this.bExecuted)
         {
             this.buttonCancelExecution.setDisable(true);
@@ -844,273 +922,12 @@ public class GJarScanController {
         }
     }
 
-    private void searchSourceImportsJarFiles()
-    {
-        File fdir = new File(textfieldSearchDir.getText());
-        if (!fdir.exists())
-        {
-            labelMsg.setText("Dir " +fdir.getAbsolutePath() +"do not exists! No execution!");
-            return;
-        }
-
-        this.bExecuted = true;
-        this.listResult.getItems().clear();
-        this.buttonSearchResult.setDisable(true);
-        hmImportedJars.clear();
-        importJars.clear();
-
-        importTask = new Task<Integer>() {
-            @Override
-            protected Integer call() throws Exception {
-                searchSourceImportsJarFiles(fdir);
-                Platform.runLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        System.out.println("list result size: " +listResult.getItems().size());
-
-                        listResult.refresh();
-                        labelMsg.setText("All done!");
-                        buttonCancelExecution.setDisable(true);
-                    }});
-                super.succeeded();
-                return 0;
-            }
-
-            @Override
-            protected void succeeded() {
-                labelMsg.setText("All done1: ");
-               // this.buttonSearchResult.setDisable(false);
-                buttonExecution.setDisable(false);
-                bExecuted = false;
-            }
-
-            @Override
-            protected void cancelled() {
-                super.cancelled();
-                buttonExecution.setDisable(false);
-                bExecuted = false;
-                Platform.runLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        labelMsg.setText("User canceled the execution!");
-                    }});
-            }
-
-            @Override
-            protected void failed() {
-                super.failed();
-                // this.buttonSearchResult.setDisable(true);
-                bExecuted = false;
-                Platform.runLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        labelMsg.setText("The execution failed!");
-                    }});
-            }
-        };
-
-        Thread th = new Thread(importTask);
-        th.setDaemon(true);
-        th.start();
-    }
-
-    private void searchSourceImportsJarFiles(File dir)
-            throws InterruptedException, IOException
-    {
-        File [] sources, subdirs;
-        String name;
-
-        File [] arrSources = dir.listFiles(sourcefilefilter);
-        for(File f : arrSources) {
-            searchFromSouceImportsInJarFiles(f);
-        }
-
-        File [] arrSubDirs = dir.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File file) {
-                return file.isDirectory();
-            }
-        });
-
-        for(File dir2 : arrSubDirs) {
-                searchSourceImportsJarFiles(dir2);
-        }
-    }
-
-    private static String getSourceText(File f)
-    {
-        StringBuilder contentBuilder = new StringBuilder();
-
-        try (Stream<String> stream = Files.lines( Paths.get(f.getAbsolutePath()), StandardCharsets.UTF_8))
-        {
-            stream.forEach(s -> contentBuilder.append(s).append("\n"));
-        }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-            return null;
-        }
-
-        return contentBuilder.toString();
-    }
-
-    private SourceComment [] getSourceComments(String strSource)
-    {
-        if (strSource == null || strSource.trim().length() == 0)
-            return null;
-        final String cntStartComment = "/*";
-        final String cntEndComment = "*/";
-        SourceComment [] ret = null;
-        int indStart = strSource.indexOf(cntStartComment);
-        if (indStart == -1)
-            return null;
-        int indEnd = strSource.indexOf(cntEndComment, indStart);
-        if (indEnd == -1)
-            return null; // slmost impossible !
-
-        List<SourceComment> list = new ArrayList<SourceComment>();
-        SourceComment comment = null;
-        while (indStart > -1 && indEnd > -1)
-        {
-            comment = new SourceComment(indStart, indEnd);
-            list.add(comment);
-            indStart = strSource.indexOf(cntStartComment, indEnd);
-            if (indStart == -1)
-                indEnd = -1;
-            else
-                indEnd = strSource.indexOf(cntEndComment, indStart);
-        }
-        ret = new SourceComment[list.size()];
-        ret = list.toArray(ret);
-        return ret;
-    }
-
-    private void searchFromSouceImportsInJarFiles(File f)
-            throws InterruptedException, IOException
-    {
-        if (Main.bDebug)
-            System.out.println("searchFromSouceImportsInJarFiles");
-        if (f == null || !f.exists())
-            return;
-
-        String strSource = getSourceText(f);
-        // dddd
-        SourceComment [] sourceComments = getSourceComments(strSource);
-        if (strSource == null || strSource.trim().length() == 0)
-            return;
-        Pattern p = null;
-        Matcher m = null;
-        int indComment = -1;
-        String strLine = null;
-        StringBuffer sb = new StringBuffer();
-        try {
-            p = Pattern.compile("($.*?)import\\s+(.*?)(;*\\s*\n)", Pattern.DOTALL | Pattern.MULTILINE); // either this: ^\d+\).*\][\n\r]
-            m = p.matcher(strSource);
-            boolean find = m.find();
-            String strClass = null;
-            int iGroup = -1, max = m.groupCount(), iStart, iEnd;
-            while (find) {
-                strClass = m.group(2);
-                strLine = m.group(1);
-                iStart = m.start();
-                iEnd = m.end();
-                if (strClass == null || strClass.trim().length() == 0)
-                {
-                    find = m.find();
-                    continue;
-                }
-
-                if (strClass.startsWith("java.") || strClass.startsWith("javafx.") || strClass.startsWith("javax."))
-                {
-                    find = m.find();
-                    continue;
-                }
-                if (strLine != null)
-                {
-                    indComment = strLine.indexOf("//");
-                    if (indComment > -1)
-                    {
-                        find = m.find();
-                        continue;
-                    }
-                }
-
-                // search if import is inside of a comment:
-                if (sourceComments != null)
-                for (SourceComment sc : sourceComments)
-                {
-                    if (sc == null)
-                        continue;
-                    if (sc.start < iStart && sc.end > iEnd)
-                    {
-                        find = m.find();
-                        continue;
-                    }
-                }
-
-                System.out.println("class=" +strClass);
-                startCLassSearchFrom(strClass);
-                find = m.find();
-            }
-            /*
-        }catch (Exception e) {
-            e.printStackTrace();
-             */
-        }finally {
-        }
-    }
-
-    private void startCLassSearchFrom(String strClass)
-            throws InterruptedException, IOException
-    {
-        String search = strClass;
-        String strSearchType = "-class";
-        if (strClass.endsWith(".*")) {
-            int ind = strClass.lastIndexOf(".*");
-            if (ind > -1) {
-                search = strClass.substring(0, ind);
-                strSearchType = "-package";
-            }
-        }
-
-        String strSearch = strClass;
-        if (strSearch == null || strSearch.trim().length() == 0) {
-            labelMsg.setText("Search class field is emty or contains space. Not executed.");
-            makeBeep();
-            return;
-        }
-
-        StringBuffer sb = new StringBuffer();
-        String strDir = textfieldSearchDir.getText();
-        File fdir = new File(strDir);
-        if (!fdir.exists())
-        {
-            labelMsg.setText("Search dir does not exists!");
-            makeBeep();
-            return;
-        }
-
-        sb.append("-dir " +strDir);
-        sb.append(" " +strSearchType);
-        sb.append(" " +search);
-
-        if (this.checkboxZip.isSelected())
-            sb.append(" " + this.checkboxZip.getText());
-        if (!this.checkboxNoSearchList2.isSelected() && this.checkboxNoSearchList.isSelected())
-            sb.append(" " + this.checkboxNoSearchList.getText());
-        if (this.checkboxNosubdir.isSelected())
-            sb.append(" " + this.checkboxNosubdir.getText());
-
-        String strExecDir = new String(".");
-        executeSearchFromGivenJarFilesWithOutTask(strExecDir, sb.toString());
-    }
-
     public void buttonCancelExecutionClicked()
     {
         if (Main.bDebug)
             System.out.println("buttonCancelExecutionClicked");
         cancelExection();
-        this.labelMsg.setText("Execution canceled.");
+        this.setLabelMsg("Execution canceled.");
         this.bExecuted = false;
         this.buttonExecution.setDisable(false);
         this.buttonCancelExecution.setDisable(true);
@@ -1120,13 +937,7 @@ public class GJarScanController {
     {
         if (Main.bDebug)
             System.out.println("cancelExection");
-        String selected = (String) searchType.getSelectionModel().getSelectedItem();
-        if (selected == null || selected.trim().length() == 0)
-            return;
-        if (selected.equals(cnstSearchImports))
-            importTask.cancel(true);
-        else
-            processes.cancelProcess();
+        processes.cancelProcess();
         this.bExecuted = false;
     }
 
@@ -1187,7 +998,29 @@ public class GJarScanController {
         String strDir = this.textfieldSearchDir.getText();
         if (strDir == null || strDir.trim().length() == 0)
         {
-            labelMsg.setText("Search directory field is emty or contains space. Not executed.");
+            setLabelMsg("Search directory field is emty or contains space. Not executed.");
+            this.bExecuted = false;
+            makeBeep();
+            return;
+        }
+
+        String strSearch = this.textfieldSearchClass.getText();
+        if (strSearch == null || strSearch.trim().length() == 0)
+        {
+            setLabelMsg("Search class field is emty or contains space. Not executed.");
+            this.bExecuted = false;
+            makeBeep();
+            return;
+        }
+        if (strSearch.contains("/"))
+            strSearch = strSearch.replaceAll("/", "\\.");
+
+        if (strDir.contains("%") || strDir.contains("$"))
+            strDir = getPossibleEnvironmentVariableValue(strDir);
+
+        if (strDir == null || strDir.trim().length() == 0)
+        {
+            setLabelMsg("Search directory %ENV_VARIABLE% is emty or contains space. Not executed.");
             this.bExecuted = false;
             makeBeep();
             return;
@@ -1196,21 +1029,20 @@ public class GJarScanController {
         File fileTest = new File(strDir);
         if (!fileTest.exists())
         {
-            labelMsg.setText("This '" +fileTest.getAbsolutePath() +"' file does not exists. Executon canceled.");
+            setLabelMsg("This '" +fileTest.getAbsolutePath() +"' file does not exists. Executon canceled.");
             makeBeep();
             return;
         }
-
         if (!fileTest.isDirectory())
         {
-            labelMsg.setText("This '" +fileTest.getAbsolutePath() +"' file is not a directory. Executon canceled.");
+            setLabelMsg("This '" +fileTest.getAbsolutePath() +"' file is not a directory. Executon canceled.");
             makeBeep();
             return;
         }
 
         sb.append("-dir " +strDir);
         sb.append(" " +searchType.getSelectionModel().getSelectedItem().toString());
-        sb.append(" " +textfieldSearchClass.getText());
+        sb.append(" " +strSearch);
 
         if (this.checkboxZip.isSelected())
             sb.append(" " + this.checkboxZip.getText());
@@ -1225,22 +1057,52 @@ public class GJarScanController {
         return;
     }
 
-    private String getPossilbleEnvironmentVariableValue( String strdir)
+    private String getPossibleEnvironmentVariableValue(String strDir)
     {
-        if ( strdir == null || strdir.trim().length() == 0)
-            return strdir;
-        int ind = strdir.indexOf('%');
+        String ret = strDir;
+      if (strDir != null && strDir.contains("%"))
+          return getWinEnvVariable(strDir);
+      else
+      if (strDir != null && strDir.contains("$"))
+          return getLinuxEnvVariable(strDir);
+      return ret;
+    }
+
+    private String getWinEnvVariable(String strDir)
+    {
+        if ( strDir == null || strDir.trim().length() == 0)
+            return strDir;
+        int ind = strDir.indexOf('%');
         if (ind == -1)
-            return strdir;
-        int indSecond = strdir.indexOf('%', ind+1);
+            return strDir;
+        int indSecond = strDir.indexOf('%', ind+1);
         if (indSecond == -1)
-            return strdir;
-        String strEnvVar = strdir.substring(ind+1, indSecond);
+            return strDir;
+        String strEnvVar = strDir.substring(ind+1, indSecond);
         if (strEnvVar == null || strEnvVar.trim().length() == 0)
-            return strdir;
+            return strDir;
         String strEnvValue = System.getenv(strEnvVar);
         if (strEnvValue == null || strEnvValue.trim().length() == 0)
-            return strdir;
+            return strDir;
+        return strEnvValue;
+    }
+
+    private String getLinuxEnvVariable(String strDir)
+    {
+        if ( strDir == null || strDir.trim().length() == 0)
+            return strDir;
+        strDir = strDir.trim();
+        int ind = strDir.indexOf('$');
+        if (ind == -1)
+            return strDir;
+        if (ind != 0)
+            return strDir;
+        String strEnvVar = strDir.substring(ind+1);
+        if (strEnvVar == null || strEnvVar.trim().length() == 0)
+            return strDir;
+        String strEnvValue = System.getenv(strEnvVar);
+        if (strEnvValue == null || strEnvValue.trim().length() == 0)
+            return strDir;
         return strEnvValue;
     }
 
@@ -1294,7 +1156,6 @@ public class GJarScanController {
         ret = list.toArray(ret);
         return ret;
     }
-
     private void executeSearchFromGivenJarFiles(String strWorkingDir, String strExecute) {
         if (Main.bDebug)
         {
@@ -1313,7 +1174,7 @@ public class GJarScanController {
                     int exitvalue = service.getExitValue();
                     Object arrValue = t.getSource().getValue();
                     if (exitvalue != 0) {
-                        labelMsg.setText("Error.");
+                        setLabelMsg("Error.");
                         isJarScanSearchOk.setBoolean(false);
                         if ((arrValue == null || arrValue.equals(""))
                                 && service.getErrorString() != null) {
@@ -1335,7 +1196,7 @@ public class GJarScanController {
                         }
                         else
                             listResult.getItems().addAll(new ListResultData(arrValue.toString()));
-                        labelMsg.setText("Done.");
+                        setLabelMsg("Done.");
                     }
                     buttonExecution.setDisable(false);
                     if (listResult.getItems().size() > 0)
@@ -1356,7 +1217,7 @@ public class GJarScanController {
                     Object arrValue = t.getSource().getValue();
                     if (arrValue != null)
                         listResult.getItems().addAll(new ListResultData(arrValue.toString()));
-                    labelMsg.setText("Failed.");
+                    setLabelMsg("Failed.");
                     //listResult.getItems().addAll(strResult.split("\n"));
                     buttonExecution.setDisable(false);
                     buttonCancelExecution.setDisable(true);
@@ -1379,7 +1240,7 @@ public class GJarScanController {
                         listResult.getItems().clear();
                         listResult.getItems().addAll(new ListResultData(arrValue.toString()));
                     }
-                    labelMsg.setText("Canceled.");
+                    setLabelMsg("Canceled.");
                     //listResult.getItems().addAll(strResult.split("\n"));
                     buttonExecution.setDisable(false);
                     buttonCancelExecution.setDisable(true);
@@ -1392,7 +1253,7 @@ public class GJarScanController {
             buttonExecution.setDisable(true);
             buttonCancelExecution.setDisable(false);
             this.processes.setExecutionData(strWorkingDir, strExecute);
-            this.labelMsg.setText("Executing...");
+            this.setLabelMsg("Executing...");
             this.bExecuted = true;
            // test buttons: Thread.sleep(10000);
             if (this.processes.getState() != Worker.State.READY) {
@@ -1410,173 +1271,6 @@ public class GJarScanController {
             this.listResult.getItems().addAll(sbResult.toString().split("(\n|$)"));
             this.bExecuted = false;
         }
-    }
-
-    private String [] getOnlyNewJarsInImportJars(String [] arrInput)
-    {
-        String [] ret = null;
-        if (arrInput == null || arrInput.length == 0)
-            return null;
-        StringBuffer sb = new StringBuffer();
-        int ind = -1;
-        final String cnstClass = "Class:";
-        final String cnstLibraryName = "Library Path:";
-        final String cnstPackage = "Package:";
-        String jarPath = null, jarBaseName = null;
-        File jarFile = null;
-        List<String> addJarPaths = new ArrayList<String>();
-        String strClass = null;
-        String strPackage = null;
-        int indClass = -1, indPackage = -1;
-
-        for (String s : arrInput)
-        {
-            if (s == null || s.trim().length() == 0)
-                continue;
-            indClass = s.indexOf(cnstClass);
-            if (indClass > -1)
-                strClass = s.substring(indClass +cnstClass.length() +1 );
-            indPackage = s.indexOf(cnstPackage);
-            if (indPackage > -1)
-                strPackage = s.substring(indPackage +cnstPackage.length() +1 );
-            ind = s.indexOf(cnstLibraryName);
-            jarPath = null;
-            if (ind > -1) {
-                jarPath = s.substring(ind +cnstLibraryName.length() + 1);
-                jarPath = jarPath.replaceAll("\n","").replaceAll("\r","");
-                jarFile = new File(jarPath);
-                jarBaseName = jarFile.getName();
-                if (hmImportedJars.containsKey(jarBaseName))
-                    continue;
-                hmImportedJars.put(jarBaseName, jarFile);
-                if (strClass != null)
-                    addJarPaths.add(cnstClass +" " +strClass);
-                else
-                    addJarPaths.add(cnstPackage +" " +strPackage);
-                addJarPaths.add(cnstLibraryName +" " +jarPath);
-            }
-        }
-        ret = new String[addJarPaths.size()];
-        ret = addJarPaths.toArray(ret);
-        if (ret.length == 0)
-            return null;
-        return ret;
-    }
-    private void executeSearchFromGivenJarFilesWithOutTask(String strWorkingDir, String strExecute)
-            throws InterruptedException, IOException
-    {
-        if (Main.bDebug)
-        {
-            System.out.println("executeSearchFromGivenJarFilesWithOutTask");
-            System.out.println("strExecute=" + strExecute);
-        }
-
-        final StringBuffer sbResult = new StringBuffer();
-
-        System.out.println("done:" /* + t.getSource().getValue() */);
-        JarScanProcesses service = new JarScanProcesses();
-        // service.setExecutionData(strWorkingDir, strExecute);
-        // try {
-            String arrValue = service.runJava(strWorkingDir, strExecute);
-            int exitvalue = service.getExitValue();
-            if (exitvalue != 0) {
-                Platform.runLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        labelMsg.setText("Error.");
-                        isJarScanSearchOk.setBoolean(false);
-                        if ((arrValue == null || arrValue.equals(""))
-                                && service.getErrorString() != null) {
-                            listResult.getItems().addAll(getListResultData(service.getErrorString().split("(\n|$)")));
-                        } else
-                            listResult.getItems().addAll(getListResultData(((String) arrValue).split("(\n|$)")));
-                        }
-                    });
-            } else {
-                isJarScanSearchOk.setBoolean(true);
-                Platform.runLater(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (arrValue instanceof String) {
-                            String strSplit = new String(((String) arrValue) + "\n");
-                            strSplit = getNormalResult(strSplit);
-                            String[] arrListRows = getSplittedArray(strSplit, "\n");
-                            String[] arrListRows2 = getOnlyNewJarsInImportJars(arrListRows);
-                            if (arrListRows2 == null || arrListRows2.length == 0)
-                                return;
-                            listResult.getItems().addAll(getListResultData(arrListRows2));
-                        } else
-                            listResult.getItems().add(new ListResultData(arrValue.toString()));
-                    }
-                });
-              //  labelMsg.setText("Done.");
-            }
-            /*
-        }catch (InterruptedException ie){
-            labelMsg.setText("User interrupted the execution!");
-            bExecuted = false;
-        }catch (IOException ioe){
-            ioe.printStackTrace();
-            labelMsg.setText(ioe.getMessage());
-            bExecuted = false;
-        }
-             */
-        //listResult.getItems().addAll(strResult.split("(\n|$)"));
-
-    /*
-                    System.out.println("failed:");
-                    if (bProssesRestarted)
-                        return;
-                    isJarScanSearchOk.setBoolean(false);
-                    listResult.getItems().clear();
-                    Object arrValue = t.getSource().getValue();
-                    if (arrValue != null)
-                        listResult.getItems().addAll(new ListResultData(arrValue.toString()));
-                    labelMsg.setText("Failed.");
-                    //listResult.getItems().addAll(strResult.split("\n"));
-                    buttonExecution.setDisable(false);
-                    buttonCancelExecution.setDisable(true);
-                    bExecuted = false;
-                    if (listResult.getItems().size() > 0)
-                        buttonSearchResult.setDisable(false);
-                }
-
-                    System.out.println("canceled:");
-                    if (bProssesRestarted)
-                        return;
-                    isJarScanSearchOk.setBoolean(false);
-                    listResult.getItems().clear();
-                    Object arrValue = t.getSource().getValue();
-                    if (arrValue != null) {
-                        listResult.getItems().clear();
-                        listResult.getItems().addAll(new ListResultData(arrValue.toString()));
-                    }
-                    labelMsg.setText("Canceled.");
-                    //listResult.getItems().addAll(strResult.split("\n"));
-                    buttonExecution.setDisable(false);
-                    buttonCancelExecution.setDisable(true);
-                    bExecuted = false;
-                    if (listResult.getItems().size() > 0)
-                        buttonSearchResult.setDisable(false);
-                }
-
-            this.processes.setExecutionData(strWorkingDir, strExecute);
-            // test buttons: Thread.sleep(10000);
-            if (this.processes.getState() != Worker.State.READY) {
-                this.bProssesRestarted = true; // this boolean variable into true, because to prevent
-                // of extra call below:
-                this.processes.restart(); // restart causes an extra call into onsuccess etc
-                bProssesRestarted = false; // after an extra handler catt, after this can do "normal" handler call
-            }
-            else
-                this.processes.start();
-            // strResult = processes.run(strWorkingDir, strExecute);
-        }catch (Exception e){
-            e.printStackTrace();
-            sbResult.append(e.toString() +"\n\n errorlevel " +processes.getExitValue() +"\n\n" +processes.getErrorString());
-            this.listResult.getItems().addAll(sbResult.toString().split("(\n|$)"));
-        }
-     */
     }
 
     private String getNormalResult(String strResult)
@@ -1740,41 +1434,36 @@ public class GJarScanController {
         });
     }
 
-    private String getClassValue(String dualClickedItem)
+    private String getClassValue(String duppelClickedItem)
     {
         String ret = null;
-        if (dualClickedItem == null)
+        if (duppelClickedItem == null)
             return null;
-        if (dualClickedItem.trim().length() == 0)
+        if (duppelClickedItem.trim().length() == 0)
             return null;
         final String strClass = "Class:";
-        if (!dualClickedItem.trim().startsWith(strClass))
+        if (!duppelClickedItem.trim().startsWith(strClass))
             return null;
-        ret = dualClickedItem.replace(strClass, "").trim();
+        ret = duppelClickedItem.replace(strClass, "").trim();
         return ret;
     }
 
-    private String getJarPathValue(String dualClickedItem)
+    private String getJarPathValue(String duppelClickedItem)
     {
         String ret = null;
-        if (dualClickedItem == null)
+        if (duppelClickedItem == null)
             return null;
-        if (dualClickedItem.trim().length() == 0)
+        if (duppelClickedItem.trim().length() == 0)
             return null;
-        if (!dualClickedItem.toLowerCase().contains(".jar"))
+        if (!duppelClickedItem.toLowerCase().contains(".jar"))
             return null;
         final String strLibPath = "Library Path:";
-        /*
-        final String strClass = "Class:";
-        if (!dualClickedItem.contains(strLibPath) && !dualClickedItem.contains(strClass))
+        if (!duppelClickedItem.contains(strLibPath))
             return null;
-        if (dualClickedItem.contains(strClass))
-            strLibPath = strClass;
-         */
         String pathSeparator = "" +File.separatorChar;
-        if (/* !dualClickedItem.contains(strClass) && */ !dualClickedItem.toLowerCase().contains(pathSeparator))
+        if (!duppelClickedItem.toLowerCase().contains(pathSeparator))
             return null;
-        ret = dualClickedItem.replaceAll(strLibPath, "").trim();
+        ret = duppelClickedItem.replaceAll(strLibPath, "").trim();
         return ret;
     }
 
@@ -1863,5 +1552,15 @@ public class GJarScanController {
                 }
             });
         };
+    }
+
+    private void setLabelMsg(String str)
+    {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                labelMsg.setText(str);
+            }
+        });
     }
 }

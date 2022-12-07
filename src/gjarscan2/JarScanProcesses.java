@@ -265,12 +265,12 @@ public class JarScanProcesses extends Service<String> {
         this.strMessage = "Cancelled!";
     }
 
-    private String getClassPathSeparator()
+    public static String getClassPathSeparator()
     {
         return (File.separatorChar == '\\' ? ";": ":");
     }
 
-    public String correctSpaceContainsClassPath(String classpath)
+    public static String correctSpaceContainsClassPath(String classpath)
     {
         if (classpath == null)
             return classpath;
@@ -284,7 +284,7 @@ public class JarScanProcesses extends Service<String> {
         String classPathSeparator = (File.separatorChar == '\\' ? ";" : ":");
         int indclassPathSeparator = classpath.indexOf(classPathSeparator);
         if (indclassPathSeparator == -1)
-            return classPathSeparator +getCorrectedOneClassPath(classpath) +classPathSeparator;
+            return classPathSeparator +JarScanProcesses.getCorrectedOneClassPath(classpath) +classPathSeparator;
 
         String regexSeparator = "(" + classPathSeparator +"|$)";
         String [] arrClassPath = classpath.split(regexSeparator);
@@ -301,7 +301,7 @@ public class JarScanProcesses extends Service<String> {
         return ret;
     }
 
-    public String getCorrectedOneClassPath(String oneClassPathValue)
+    public static String getCorrectedOneClassPath(String oneClassPathValue)
     {
         if (oneClassPathValue == null)
             return oneClassPathValue;
