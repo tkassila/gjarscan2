@@ -84,7 +84,8 @@ public final class JarScan
                     if(afile[i].getName().endsWith(".jar") || afile[i].getName().endsWith(".JAR"))
                         jarfiles.add(afile[i]);
                     else
-                    if(includeZip && (afile[i].getName().endsWith(".zip") || afile[i].getName().endsWith(".ZIP")))
+                    if(includeZip && (afile[i].getName().endsWith(".zip") || afile[i].getName().endsWith(".ZIP")
+                            || afile[i].getName().endsWith(".jmod")))
                         jarfiles.add(afile[i]);
                     filecounter++;
                 }
@@ -95,7 +96,8 @@ public final class JarScan
             jarfiles.add(file);
             filecounter++;
         } else
-        if(includeZip && (file.getName().endsWith(".zip") || file.getName().endsWith(".ZIP")))
+        if(includeZip && (file.getName().endsWith(".zip") || file.getName().endsWith(".ZIP")
+                || file.getName().endsWith(".jmod")))
             jarfiles.add(file);
     }
 

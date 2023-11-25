@@ -1,0 +1,10 @@
+module gjarscan2 {
+    requires javafx.controls;
+    requires javafx.fxml;
+    requires javafx.web;
+    requires javafx.graphics;
+    requires java.desktop;
+
+    opens gjarscan2 to javafx.fxml;
+    exports gjarscan2;
+}

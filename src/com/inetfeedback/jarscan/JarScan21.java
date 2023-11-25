@@ -93,7 +93,8 @@ public final class JarScan21
                  dirParser(afile[i]);
              } else
              {
-                 if(afile[i].getName().endsWith(".jar") || afile[i].getName().endsWith(".JAR"))
+                 if(afile[i].getName().endsWith(".jar") || afile[i].getName().endsWith(".JAR")
+                         || afile[i].getName().endsWith(".jmod"))
                      jarfiles.add(afile[i]);
                  else
                  if(includeZip && (afile[i].getName().endsWith(".zip") || afile[i].getName().endsWith(".ZIP")))
@@ -102,7 +103,7 @@ public final class JarScan21
              }
 
      } else
-     if(file.getName().endsWith(".jar") || file.getName().endsWith(".JAR"))
+     if(file.getName().endsWith(".jar") || file.getName().endsWith(".JAR") || file.getName().endsWith(".jmod"))
      {
          jarfiles.add(file);
          filecounter++;
@@ -135,15 +136,113 @@ public final class JarScan21
 
  }
 
+ private class JmodReturn {
+     boolean flag = false;
+     boolean flag1 = false;
+ }
+
+ private JmodReturn searchJModFile(File file)
+         throws Exception
+ {
+     ZipFile zipfile = new ZipFile(file);
+     Enumeration enumeration = zipfile.entries();
+     ZipEntry zipentry;
+     String s;
+     boolean flag = false;
+     boolean flag1 = false;
+     boolean isClassEntry = false;
+     boolean iSearchDone = false;
+
+     for (; enumeration.hasMoreElements();)
+     {
+         isClassEntry = false;
+         zipentry = (ZipEntry)enumeration.nextElement();
+         if (zipentry == null)
+             continue;
+         s = zipentry.getName();
+         if (!s.startsWith("classes/"))
+             continue;
+
+         s = s.replace("classes/","");
+         if (s.endsWith(".class"))
+         {
+             int ind = s.lastIndexOf(".class");
+             if (ind > -1)
+             {
+                 isClassEntry = true;
+                 s = s.substring(0, ind);
+             }
+         }
+         s = s.replace('/', '.');
+        if (!classSearch && isClassEntry)
+         {
+             int indLast = s.lastIndexOf(".");
+             if (indLast > -1)
+             {
+                 s = s.substring(0 , indLast);
+             }
+         }
+         int j = 0;
+
+         while(j < searchfiles.size())
+         {
+             String s1 = (String)searchfiles.get(j);
+             if(classSearch)
+             {
+                 if(s != null && s.length() > 0 &&  s.equals(s1))
+                 {
+                     String s2 = s.toString();
+                     String s3 = s2.substring(0, s2.lastIndexOf("."));
+                     flag = true;
+                     SearchResult searchresult1 = new SearchResult(s1, SearchType.CLASS, file.getName(), file.getCanonicalPath(), s3, s2);
+                     searchResults.add(searchresult1);
+                 }
+             } else
+                     if(s.contains(s1))
+                     {
+                         flag1 = true;
+                         SearchResult searchresult = new SearchResult(s1, SearchType.PACKAGE, file.getName(), file.getCanonicalPath(), s, null);
+                         searchResults.add(searchresult);
+                         iSearchDone = true;
+                         break;
+                     }
+
+                 j++;
+         }
+         if (iSearchDone)
+             break;
+     }
+     JmodReturn ret = new JmodReturn();
+     ret.flag = flag;
+     ret.flag1 = flag1;
+     return ret;
+ }
+
  private void searchLibrary()
      throws Exception
  {
      boolean flag = false;
      boolean flag1 = false;
+     boolean bJModFile = false;
 label0:
      for(int i = 0; i < jarfiles.size(); i++)
      {
          File file = (File)jarfiles.get(i);
+         bJModFile = file.getName().endsWith(".jmod");
+         if (bJModFile)
+         {
+             JmodReturn ret = searchJModFile(file);
+             if (ret != null)
+             {
+                 if (ret.flag)
+                     flag = true;
+                 else
+                 if (ret.flag1)
+                     flag1 = true;
+             }
+             continue;
+         }
+
          try
          {
              ZipFile zipfile = new ZipFile(file);
@@ -456,8 +555,8 @@ label0:
     	 }
     	 else
     	 {
-    		 if (bGUI)
-    			 gui.close();
+//    		 if (bGUI)
+//    			 gui.close();
     		 System.exit(0);
     	 }
      }
@@ -516,8 +615,8 @@ label0:
  private static int read(String msg)
  throws IOException
  {
-	 if (bGUI)
-		 return gui.read(msg);
+//	 if (bGUI)
+//		 return gui.read(msg);
 	 System.out.print(msg);
 	 return System.in.read();
  }
@@ -604,19 +703,22 @@ label0:
  private static void changeBackGroundColor()
  {
 	 bBackGroundColor = ! bBackGroundColor;
-	 if (bGUI)
+/*	 if (bGUI)
 	 {
 		 gui.changeBackGroundColor(bBackGroundColor);
-	 }	 
+	 }
+ */
  }
  
  private static String readParams(String msg)
  throws IOException
  {
+     /*
 	if (bGUI)
 	{
 		return gui.readParams(msg);
 	}
+      */
 	int iBytesReaded = System.in.read(readBytes);
 	if (iBytesReaded < 3) // with /r/n
 		return null;
@@ -628,11 +730,13 @@ label0:
  private static void clearAnswer()
  throws IOException
  {
+     /*
 	if (bGUI)
 	{
 		gui.clearAnswer();
 		return ;
 	}
+      */
 	while(System.in.available() > 0)
 		System.in.read();	 
  }
@@ -700,7 +804,8 @@ label0:
              dirParser(afile[i]);
              continue;
          }
-         if(afile[i].getName().endsWith(".jar") || afile[i].getName().endsWith(".JAR"))
+         if(afile[i].getName().endsWith(".jar") || afile[i].getName().endsWith(".JAR")
+                 || afile[i].getName().endsWith(".jmod"))
              jarfiles.add(afile[i]);
          filecounter++;
      }
@@ -753,7 +858,7 @@ label0:
 
  private static void initGui()
  {
-	 gui = new JarscanGui ();
+	// gui = new JarscanGui ();
 	 System.out.println("gui initialized: " );
  }
 
@@ -768,10 +873,10 @@ label0:
  private boolean progressCountRun;
  private ArrayList searchResults;
  private String startPath;
- private static String versionNum = "2.3tk";
+ private static String versionNum = "2.4tk";
  private static boolean bScanSubDirs = true;
  private static boolean bGUI = false;
- private static JarscanGui gui;
+ // private static JarscanGui gui;
  private static byte [] readBytes = new byte[81];
  private static boolean bBackGroundColor = false;
  private static boolean bSaveJarFileLIstUntilNextCall = false;

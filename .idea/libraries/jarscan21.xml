@@ -1,9 +1,6 @@
 <component name="libraryTable">
   <library name="jarscan21">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/lib/jarscan21.jar!/" />
-      <root url="jar://$PROJECT_DIR$/lib/jarscan.jar!/" />
-    </CLASSES>
+    <CLASSES />
     <JAVADOC />
     <SOURCES />
   </library>
