@@ -367,8 +367,14 @@ public class GJarScanController {
         this.listResult.setFixedCellSize(30);
         this.listResult.setStyle("-fx-font-size: 16px");
         this.buttonCancelExecution.setDisable(true);
+        Tooltip mavenTip = new Tooltip();
+        mavenTip.setText("When double click a maven repo jar row, convert it into maven dependency xml block.");
+        checkBoxMaven.setTooltip(mavenTip);
         this.checkBoxMaven.setDisable(true);
         this.checkBoxGradle.setDisable(true);
+        Tooltip gradleTip = new Tooltip();
+        gradleTip.setText("When double click a maven repo jar row, convert it into gradle implementation version.");
+        this.checkBoxGradle.setTooltip(gradleTip);
         this.textfieldSearhFromResult.setText(" start");
        // this.buttonExecution.setDisable(true);
         this.buttonNext.setDisable(true);
