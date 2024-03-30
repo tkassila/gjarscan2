@@ -1,8 +1,11 @@
 package gjarscan2;
 
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.Clipboard;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Worker;
@@ -40,7 +43,8 @@ import javax.sound.sampled.SourceDataLine;
 import javax.sound.sampled.AudioSystem;
 
 public class GJarScanController {
-
+    final Clipboard clipboard = Clipboard.getSystemClipboard();
+    final ClipboardContent content = new ClipboardContent();
     private static final String NEWLINE = System.getProperty("line.separator");
     private ObservableList<String> searchTypeList = FXCollections.observableArrayList(
       "-class", "-package", "-files"
@@ -242,6 +246,10 @@ public class GJarScanController {
     VBox anchorPaneUppder;
     @FXML
     VBox anchorPaneLower;
+    @FXML
+    private CheckBox checkBoxMaven;
+    @FXML
+    private CheckBox checkBoxGradle;
 
     private boolean bProssesRestarted = false;
     private boolean bExecuted = false;
@@ -259,6 +267,59 @@ public class GJarScanController {
     private ResultTextPosition lastResultTextPosition =  null;
     private int iIndextitledPaneSearhFromResult = -1;
 
+    protected static boolean bUnderCheckBoxChange = false;
+
+    private String getMavenDependencyOf(String currentDuppelClickedItem, boolean bGradle)
+    {
+        String ret = currentDuppelClickedItem;
+        if (ret != null && ret.trim().length() > 0)
+        {
+            String strRegex = File.separatorChar == '/' ? "/" : "\\\\";
+            String [] path_dirs = ret.split(strRegex);
+            if (path_dirs != null && path_dirs.length>0)
+            {
+                int size = path_dirs.length;
+                int lastIndex = size -1;
+                int lastIndex3 = size -3;
+                int lastIndex4 = size -4;
+                int lastIndex5 = size -5;
+                String lastFileName = path_dirs[lastIndex];
+                String importPathValue = path_dirs[lastIndex3];
+                String importPathValue4 = path_dirs[lastIndex4];
+                String importPathValue5 = path_dirs[lastIndex5];
+                int lastPoint = lastFileName.lastIndexOf(".");
+                int lastStrike = lastFileName.lastIndexOf("-");
+                String strGroup = "";
+                if (lastPoint > -1 && lastStrike > -1)
+                {
+                    strGroup = importPathValue5 +"." +importPathValue4;
+                }
+                String strArtifact = importPathValue;
+                String strVersion = lastFileName.substring(lastStrike +1, lastPoint);
+                String strTemplate = "<dependency>\n<groupId>%s</groupId>\n" +
+                        "<artifactId>%s</artifactId>\n<version>%s</version>\n</dependency>";
+                if (bGradle)
+                { //  implementation group: 'com.ibm.icu', name: 'icu4j', version: '74.2'
+                    strTemplate = "implementation group: '%s', name: '%s', version: '%s'";
+                }
+                ret = String.format(strTemplate, strGroup, strArtifact, strVersion);
+
+            }
+        }
+        return ret;
+    }
+
+    private String getJModPathOf(String selected)
+    {
+        String ret = selected;
+        if (selected != null && selected.trim().length()>0)
+        {
+            int ind = selected.indexOf(": ");
+            ret = selected.substring(ind+2).trim();
+        }
+        return ret;
+    }
+
     @FXML
     public void initialize() {
         if (Main.bDebug)
@@ -266,7 +327,34 @@ public class GJarScanController {
         System.out.println("java.version=" +System.getProperty("java.version"));
         System.out.println("javafx.version=" +System.getProperty("javafx.version"));
 
+        // ectoryChooser.setFileHidingEnabled(false);
       //  this.listResult.setFont(defaultFont);
+
+        checkBoxMaven.selectedProperty().addListener(
+              (ObservableValue<? extends Boolean> ov, Boolean old_val, Boolean new_val) -> {
+                  if (!bUnderCheckBoxChange && new_val && checkBoxGradle.isSelected())
+                      Platform.runLater(new Runnable() {
+                          @Override
+                          public void run() {
+                              bUnderCheckBoxChange = true;
+                              checkBoxGradle.setSelected(false);
+                              bUnderCheckBoxChange = false;
+                          }
+                      });
+              });
+
+        checkBoxGradle.selectedProperty().addListener(
+                (ObservableValue<? extends Boolean> ov, Boolean old_val, Boolean new_val) -> {
+                    if (!bUnderCheckBoxChange && new_val && checkBoxMaven.isSelected())
+                        Platform.runLater(new Runnable() {
+                            @Override
+                            public void run() {
+                                bUnderCheckBoxChange = true;
+                                checkBoxMaven.setSelected(false);
+                                bUnderCheckBoxChange = false;
+                            }
+                        });
+                });
 
         Platform.runLater(new Runnable() {
             @Override
@@ -279,6 +367,8 @@ public class GJarScanController {
         this.listResult.setFixedCellSize(30);
         this.listResult.setStyle("-fx-font-size: 16px");
         this.buttonCancelExecution.setDisable(true);
+        this.checkBoxMaven.setDisable(true);
+        this.checkBoxGradle.setDisable(true);
         this.textfieldSearhFromResult.setText(" start");
        // this.buttonExecution.setDisable(true);
         this.buttonNext.setDisable(true);
@@ -294,7 +384,7 @@ public class GJarScanController {
                      ) ) {
          */
 
-        this.directoryChooser.setTitle("Select jar search directory");
+        this.directoryChooser.setTitle("Select jar search directory (linux: cntrl+h to show hidden files)");
 
         this.listResult.setOnMouseClicked(new EventHandler<MouseEvent>() {
             @Override
@@ -312,17 +402,48 @@ public class GJarScanController {
                             bJarPathSeeked = false;
                             currentDuppelClickedItem = getClassValue(selected.toString());
                         }
+                        if (currentDuppelClickedItem == null && selected.toString().endsWith(".jmod"))
+                            currentDuppelClickedItem = getJModPathOf(selected.toString());
+
                         if (currentDuppelClickedItem != null) {
-                            Toolkit.getDefaultToolkit()
-                                    .getSystemClipboard()
-                                    .setContents(
-                                            new StringSelection(currentDuppelClickedItem),
-                                            null
-                                    );
+                            if (bJarPathSeeked && (checkBoxMaven.isSelected() || checkBoxGradle.isSelected()))
+                                currentDuppelClickedItem = getMavenDependencyOf(currentDuppelClickedItem, checkBoxGradle.isSelected());
+                            {
+                                content.putString(currentDuppelClickedItem);
+                                clipboard.setContent(content);
+                            }
+                            /*
+                            Platform.runLater(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toolkit.getDefaultToolkit()
+                                            .getSystemClipboard()
+                                            .setContents(
+                                                    new StringSelection(new String(currentDuppelClickedItem)),
+                                                    null
+                                            );
+
+                                }
+                            });
+                            */
+
                             if (bJarPathSeeked)
-                                setLabelMsg("A jar file path copied into clipboard");
+                            {
+                                if (checkBoxMaven.isSelected())
+                                    setLabelMsg("A maven dependency xml copied into clipboard");
+                                else
+                                if (checkBoxGradle.isSelected())
+                                    setLabelMsg("A gradle implementation copied into clipboard");
+                                else
+                                    setLabelMsg("A jar file path copied into clipboard");
+                            }
                             else
-                                setLabelMsg("A class copied into clipboard");
+                            {
+                                if (selected.toString().endsWith(".jmod"))
+                                    setLabelMsg("A jmod path copied into clipboard");
+                                else
+                                    setLabelMsg("A class copied into clipboard");
+                            }
                         }
                         else
                             setLabelMsg("");
@@ -405,6 +526,8 @@ public class GJarScanController {
                 listResult.getItems().addAll(strResult.split("(\n|$)")); // TODO: TARKISTA TAMA!
                 buttonExecution.setDisable(false);
                 buttonCancelExecution.setDisable(true);
+                checkBoxMaven.setDisable(true);
+                checkBoxGradle.setDisable(true);
             }
         });
 
@@ -918,6 +1041,8 @@ public class GJarScanController {
         if( !this.bExecuted)
         {
             this.buttonCancelExecution.setDisable(true);
+            this.checkBoxMaven.setDisable(true);
+            this.checkBoxGradle.setDisable(true);
             this.buttonExecution.setDisable(false);
         }
     }
@@ -930,7 +1055,11 @@ public class GJarScanController {
         this.setLabelMsg("Execution canceled.");
         this.bExecuted = false;
         this.buttonExecution.setDisable(false);
+        this.checkBoxMaven.setDisable(true);
+        this.checkBoxGradle.setDisable(true);
         this.buttonCancelExecution.setDisable(true);
+        this.checkBoxMaven.setDisable(true);
+        this.checkBoxGradle.setDisable(true);
     }
 
     private void cancelExection()
@@ -1200,7 +1329,11 @@ public class GJarScanController {
                     }
                     buttonExecution.setDisable(false);
                     if (listResult.getItems().size() > 0)
+                    {
                         buttonSearchResult.setDisable(false);
+                        checkBoxMaven.setDisable(false);
+                        checkBoxGradle.setDisable(false);
+                    }
                     buttonCancelExecution.setDisable(true);
                     bExecuted = false;
                     //listResult.getItems().addAll(strResult.split("(\n|$)"));
@@ -1223,7 +1356,11 @@ public class GJarScanController {
                     buttonCancelExecution.setDisable(true);
                     bExecuted = false;
                     if (listResult.getItems().size() > 0)
+                    {
                         buttonSearchResult.setDisable(false);
+                        checkBoxMaven.setDisable(false);
+                        checkBoxGradle.setDisable(false);
+                    }
                 }
             });
 
@@ -1244,6 +1381,8 @@ public class GJarScanController {
                     //listResult.getItems().addAll(strResult.split("\n"));
                     buttonExecution.setDisable(false);
                     buttonCancelExecution.setDisable(true);
+                    checkBoxMaven.setDisable(true);
+                    checkBoxGradle.setDisable(true);
                     bExecuted = false;
                     if (listResult.getItems().size() > 0)
                         buttonSearchResult.setDisable(false);
@@ -1252,6 +1391,8 @@ public class GJarScanController {
 
             buttonExecution.setDisable(true);
             buttonCancelExecution.setDisable(false);
+            checkBoxMaven.setDisable(true);
+            checkBoxGradle.setDisable(true);
             this.processes.setExecutionData(strWorkingDir, strExecute);
             this.setLabelMsg("Executing...");
             this.bExecuted = true;

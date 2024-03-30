@@ -4,7 +4,7 @@
 cd "$(dirname "$0")"
 export GJARSAN2_HOME=.
 export GDK_SCALE=2
-exporT DISPLAY=:0
+export DISPLAY=:0
 
 #echo GJARSAN2_HOME=$GJARSAN2_HOME
 java -version
