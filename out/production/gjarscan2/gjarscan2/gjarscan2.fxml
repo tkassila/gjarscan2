@@ -12,7 +12,7 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
-<VBox prefHeight="400.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gjarscan2.Main">
+<VBox prefHeight="494.0" prefWidth="840.0" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gjarscan2.Main">
   <children>
       <MenuBar nodeOrientation="LEFT_TO_RIGHT">
          <menus>
@@ -33,10 +33,10 @@
          <children>
             <HBox VBox.vgrow="ALWAYS">
                <children>
-                  <ButtonBar id="tabPaneMain" fx:id="tabPaneMain" prefHeight="31.0" prefWidth="383.0">
+                  <ButtonBar id="tabPaneMain" fx:id="tabPaneMain" prefHeight="40.0" prefWidth="476.0">
                      <buttons>
                         <Button id="buttonNewJarScan" fx:id="newJarScanButton" mnemonicParsing="false" onAction="#newJarScanButtonClicked" text="New search" />
-                        <Button fx:id="removeJarScanButton" mnemonicParsing="false" onAction="#removeJarScanButtonClicked" prefHeight="25.0" prefWidth="135.0" text="Remove search" />
+                        <Button fx:id="removeJarScanButton" mnemonicParsing="false" onAction="#removeJarScanButtonClicked" prefHeight="25.0" prefWidth="142.0" text="Remove search" />
                         <Button fx:id="copyJarScanButton" mnemonicParsing="false" onAction="#copyJarScanButtonClicked" prefHeight="25.0" prefWidth="135.0" text="Copy search" />
                      </buttons>
                   </ButtonBar>

@@ -17,7 +17,7 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane fx:id="anchorPaneSearchDir" xmlns="http://javafx.com/javafx/11.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gjarscan2.GJarScanController">
+<BorderPane fx:id="anchorPaneSearchDir" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="gjarscan2.GJarScanController">
    <top>
       <GridPane fx:id="gridpane" hgap="5.0" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="225.0" prefWidth="2792.0" snapToPixel="false" vgap="5.0" BorderPane.alignment="CENTER_LEFT">
         <columnConstraints>
@@ -34,12 +34,12 @@
               <RowConstraints minHeight="10.0" prefHeight="30.0" vgrow="ALWAYS" />
           </rowConstraints>
          <children>
-            <Label prefHeight="19.0" prefWidth="342.0" text="Parent dir (or environment value like %HOME_JAVA%)">
+            <Label prefHeight="19.0" prefWidth="399.0" text="Parent dir (or environment value like %HOME_JAVA%)">
                <font>
                   <Font name="System Bold" size="13.0" />
                </font>
             </Label>
-            <Label prefHeight="19.0" prefWidth="252.0" text="Searched class (package separator . or /)" GridPane.columnSpan="2147483647" GridPane.rowIndex="1">
+            <Label prefHeight="19.0" prefWidth="386.0" text="Searched class (package separator . or /)" GridPane.columnSpan="2147483647" GridPane.rowIndex="1">
                <font>
                   <Font name="System Bold" size="13.0" />
                </font>
