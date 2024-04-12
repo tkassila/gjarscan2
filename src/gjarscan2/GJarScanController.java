@@ -250,6 +250,8 @@ public class GJarScanController {
     private CheckBox checkBoxMaven;
     @FXML
     private CheckBox checkBoxGradle;
+    @FXML
+    private CheckBox checkboxListInnerClasses;
 
     private boolean bProssesRestarted = false;
     private boolean bExecuted = false;
@@ -337,6 +339,14 @@ public class GJarScanController {
         return ret;
     }
 
+    private String getInnerClassName(String strItem)
+    {
+        if (strItem == null || strItem.isEmpty())
+            return null;
+        String ret = strItem.replaceAll("-","").trim();
+        return ret;
+    }
+
     @FXML
     public void initialize() {
         if (Main.bDebug)
@@ -418,6 +428,15 @@ public class GJarScanController {
                     currentDuppelClickedItem = null;
                     Object selected = listResult.getSelectionModel().getSelectedItem();
                     if (selected != null) {
+                        String strItem = selected.toString();
+                        if (strItem != null && !strItem.isEmpty() && strItem.contains("--"))
+                        {
+                            currentDuppelClickedItem = getInnerClassName(strItem);
+                            content.putString(currentDuppelClickedItem);
+                            clipboard.setContent(content);
+                            setLabelMsg("A inner class name copied into clipboard");
+                            return;
+                        }
                         boolean bJarPathSeeked = true;
                         currentDuppelClickedItem = getJarPathValue(selected.toString());
                         if (currentDuppelClickedItem == null)
@@ -1207,6 +1226,9 @@ public class GJarScanController {
         sb.append("-dir " +strDir);
         sb.append(" " +searchType.getSelectionModel().getSelectedItem().toString());
         sb.append(" " +strSearch);
+
+        if (checkboxListInnerClasses.isSelected())
+            sb.append(" -listinnerclasses");
 
         if (this.checkboxZip.isSelected())
             sb.append(" " + this.checkboxZip.getText());

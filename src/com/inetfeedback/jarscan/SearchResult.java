@@ -8,6 +8,9 @@ package com.inetfeedback.jarscan;
 // Referenced classes of package com.inetfeedback.jarscan:
 //            SearchType
 
+import java.util.ArrayList;
+import java.util.List;
+
 public final class SearchResult
 {
 
@@ -51,10 +54,28 @@ public final class SearchResult
         return className;
     }
 
+    public boolean addInnerClassName(String className)
+    {
+        if (className == null || className.isEmpty())
+            return false;
+        innerClasses.add(className);
+        return true;
+    }
+
+    public String [] getInnerClassNames()
+    {
+        if (innerClasses.isEmpty())
+            return null;
+        String [] ret = new String[innerClasses.size()];
+        ret = innerClasses.toArray(ret);
+        return ret;
+    }
+
     private String libraryName;
     private String libraryPath;
     private SearchType searchType;
     private String searchCriteria;
     private String packageName;
     private String className;
+    private List<String> innerClasses = new ArrayList<>();
 }

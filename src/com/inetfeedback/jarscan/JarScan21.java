@@ -2,9 +2,14 @@
 package com.inetfeedback.jarscan;
 
 import java.io.*;
+import java.lang.reflect.Modifier;
+import java.net.URL;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.net.URLClassLoader;
+
+import static java.util.zip.ZipFile.*;
 
 //Referenced classes of package com.inetfeedback.jarscan:
 //         SearchResult, SearchType
@@ -51,6 +56,7 @@ public final class JarScan21
     		 "                        and <number> end markerings\n\n");                    
      stringbuffer.append("  -nosub[dirs]          Do not search in subdirs\n\n");
      stringbuffer.append("  search string         The file or package to\n                        search for.\n                        i.e. see examples above\n\n");
+     stringbuffer.append("  -listinnerclasses     List inner classes of a founded class.\n\n");
      stringbuffer.append("  -donotask[tocontinue]  Do not ask to continue after a execution.\n\n");
      return stringbuffer.toString();
  }
@@ -112,6 +118,24 @@ public final class JarScan21
          jarfiles.add(file);
  }
 
+ private void printInnerClassNamesIn(SearchResult searchresult)
+ {
+    if (searchresult == null)
+        return;;
+
+    String [] innerClNames = searchresult.getInnerClassNames();
+    StringBuffer sb = new StringBuffer();
+    for (String clName : innerClNames)
+    {
+        if (clName == null)
+            continue;
+        sb.append("   -- " +clName +"\n");
+    }
+    if (sb.length()>0)
+        println("Inner class names of this class: ");
+    println(sb.toString() +"\n\n");
+ }
+
  private void printResults()
  {
 	 int i = 0;
@@ -128,6 +152,8 @@ public final class JarScan21
          println("Package: " + searchresult.getPackageName());
          println("Library Name: " + searchresult.getLibraryName());
          println("Library Path: " + searchresult.getLibraryPath());
+         if (bFoundedInnerClasses)
+             printInnerClassNamesIn(searchresult);
          print(i +" end ");
          if (searchlist || (!searchlist && bGUI))
         	 print("===============================================");
@@ -139,6 +165,46 @@ public final class JarScan21
  private class JmodReturn {
      boolean flag = false;
      boolean flag1 = false;
+ }
+
+ private String [] getInnerClassesOf(String s1, File file, ZipEntry zipentry, ZipFile zipfile)  {
+     String [] ret = null;
+     try {
+         // InputStream inputStream = zipfile.getInputStream(zipentry);
+         // JarClassLoader jcl = new JarClassLoader();
+         URL [] urls = new URL[1];
+         urls[0] = file.toURI().toURL();
+         URLClassLoader jcl = new URLClassLoader(urls);
+         // jcl.add("myjar.jar"); // Load jar file
+         // jcl.add(new URL("http://myserver.com/myjar.jar")); // Load jar from a URL
+         // jcl.add(new FileInputStream(file)); // Load jar file from stream
+         // jcl.add("myclassfolder/"); // Load class folder
+         // jcl.add("myjarlib/"); // Recursively load all jar files in the folder/sub-folder(s)
+         // JclObjectFactory factory = JclObjectFactory.getInstance();
+         // Create object of loaded class
+         // Object obj = factory.create(jcl, "mypackage.MyClass");
+         Class loadedClass = jcl.loadClass(s1);
+         if (loadedClass == null)
+             return null;
+         ListInnerGlasses innerCls = new ListInnerGlasses(loadedClass);
+         Class [] iClasses = innerCls.getInnerClasses();
+         if (iClasses == null || iClasses.length == 0)
+             return null;
+         List<String> clsNames = new ArrayList<>();
+         int modifiers = 0;
+         for (Class cl : iClasses)
+         {
+             modifiers = cl.getModifiers();
+             clsNames.add(cl.getName() +" " + Modifier.toString(modifiers));
+         }
+         ret = new String[clsNames.size()];
+         ret = clsNames.toArray(ret);
+   //  } catch (FileNotFoundException fileNotFoundException){
+     //    fileNotFoundException.printStackTrace();
+     } catch (Exception someException){
+         someException.printStackTrace();
+     }
+     return ret;
  }
 
  private JmodReturn searchJModFile(File file)
@@ -195,6 +261,16 @@ public final class JarScan21
                      String s3 = s2.substring(0, s2.lastIndexOf("."));
                      flag = true;
                      SearchResult searchresult1 = new SearchResult(s1, SearchType.CLASS, file.getName(), file.getCanonicalPath(), s3, s2);
+                     if (bListinnerClasses)
+                     {
+                         String [] innerClasses = getInnerClassesOf(s1, file, zipentry, zipfile);
+                         if (innerClasses != null && innerClasses.length > 0)
+                             for(String innerCls : innerClasses)
+                             {
+                                 searchresult1.addInnerClassName(innerCls);
+                                 bFoundedInnerClasses = true;
+                             }
+                     }
                      searchResults.add(searchresult1);
                  }
              } else
@@ -266,6 +342,16 @@ label0:
                              String s3 = s2.substring(0, s2.lastIndexOf("."));
                              flag = true;
                              SearchResult searchresult1 = new SearchResult(s1, SearchType.CLASS, file.getName(), file.getCanonicalPath(), s3, s2);
+                             if (bListinnerClasses)
+                             {
+                                 String [] innerClasses = getInnerClassesOf(s1, file, zipentry, zipfile);
+                                 if (innerClasses != null && innerClasses.length > 0)
+                                     for(String innerCls : innerClasses)
+                                     {
+                                         searchresult1.addInnerClassName(innerCls);
+                                         bFoundedInnerClasses = true;
+                                     }
+                             }
                              searchResults.add(searchresult1);
                          }
                      } else
@@ -421,7 +507,12 @@ label0:
          {
              println(usage());
              return;
-         }         
+         }
+         if(args[i].startsWith("-listinnerclasses") )
+         {
+             bListinnerClasses = true;
+             continue;
+         }
          if(args[i].startsWith("-nosub") )
          {
         	 bScanSubDirs = false;
@@ -874,8 +965,10 @@ label0:
  private boolean progressCountRun;
  private ArrayList searchResults;
  private String startPath;
- private static String versionNum = "2.4tk";
+ private static String versionNum = "2.5tk";
  private static boolean bScanSubDirs = true;
+ private static boolean bListinnerClasses = false;
+ private static boolean bFoundedInnerClasses = false;
  private static boolean bGUI = false;
  // private static JarscanGui gui;
  private static byte [] readBytes = new byte[81];
