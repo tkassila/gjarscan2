@@ -266,6 +266,8 @@ public class GJarScanController {
     private ResultTextPosition firstResultTextPosition = null;
     private ResultTextPosition lastResultTextPosition =  null;
     private int iIndextitledPaneSearhFromResult = -1;
+    protected static String modName = new String("");
+    protected static boolean bJarPathSeekedFinal = false;
 
     protected static boolean bUnderCheckBoxChange = false;
 
@@ -316,6 +318,21 @@ public class GJarScanController {
         {
             int ind = selected.indexOf(": ");
             ret = selected.substring(ind+2).trim();
+        }
+        return ret;
+    }
+
+    private String getLibraryJModPath(String libraryPathRow)
+    {
+        String ret = libraryPathRow;
+        if (ret != null && !ret.isEmpty())
+        {
+            int ind = ret.indexOf(":");
+            int len = libraryPathRow.length();
+            if (ind > -1 && len > ind)
+            {
+                ret = libraryPathRow.substring(ind+1).trim();
+            }
         }
         return ret;
     }
@@ -469,20 +486,30 @@ public class GJarScanController {
 
                         boolean bJarPathSeeked = true;
                         currentDuppelClickedItem = getJarPathValue(selected.toString());
-                        if (currentDuppelClickedItem != null) {
-                            String strScanModuleName = getScanModuleName(currentDuppelClickedItem, false);
-                            if (strScanModuleName != null && strScanModuleName.trim().length()>0)
+                        String strScanModuleName = null;
+                        if (currentDuppelClickedItem != null)
+                            strScanModuleName = getScanModuleName(currentDuppelClickedItem, false, false);
+                        else
+                        {
+                            strScanModuleName = getScanModuleName(getLibraryJModPath(selected.toString()), false, true);
+                            bJarPathSeeked = false;
+                        }
+                        bJarPathSeekedFinal = bJarPathSeeked;
+                        if (strScanModuleName != null && strScanModuleName.trim().length()>0)
                             {
+                                modName = strScanModuleName.toString();
                                 Platform.runLater(new Runnable() {
                                     @Override
                                     public void run() {
-
                                         Dialog<String> dialog = new Dialog<String>();
                                         //Setting the title
-                                        dialog.setTitle("Describe module name in selected jar");
+                                        if (bJarPathSeekedFinal)
+                                            dialog.setTitle("Describe module name in selected jar");
+                                        else
+                                            dialog.setTitle("Module list in selected jmod file");
                                         ButtonType type = new ButtonType("Close", ButtonType.NO.getButtonData());
                                         //Setting the content of the dialog
-                                        TextArea ta = new TextArea(strScanModuleName);
+                                        TextArea ta = new TextArea(modName);
                                         ta.setEditable(false);
                                         Pane pane = new Pane();
                                         pane.getChildren().add(ta);
@@ -505,7 +532,6 @@ public class GJarScanController {
                                     }
                                 });
                             }
-                        }
                     }
                 }//your code here
             }
@@ -582,7 +608,7 @@ public class GJarScanController {
 
     private boolean isRighJarVersion()
     {
-        String strScanModuleName = getScanModuleName(currentDuppelClickedItem, true);
+        String strScanModuleName = getScanModuleName(currentDuppelClickedItem, true, false);
         if (strScanModuleName != null && strScanModuleName.trim().length()>0)
         {
             Pattern p = Pattern.compile("(?s)version\\s\"(\\d+\\.\\d+\\.\\d+)\"\\s",
@@ -614,7 +640,7 @@ public class GJarScanController {
         return false;
     }
 
-    private String getScanModuleName(String jarPath, boolean bExecJavaVersion)
+    private String getScanModuleName(String jarPath, boolean bExecJavaVersion, boolean bExecJmod)
     {
         String strMessage = null;
         String ret = null;
@@ -636,6 +662,9 @@ public class GJarScanController {
             String strCommand = "jar --describe-module --file " +jarfile.getAbsolutePath();
             if (bExecJavaVersion)
                 strCommand = "java -version";
+            else
+            if (bExecJmod)
+                strCommand = "jmod list " +jarfile.getAbsolutePath();;
 
             try {
                 if (Main.bDebug)
