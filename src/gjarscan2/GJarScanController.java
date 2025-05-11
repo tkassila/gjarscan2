@@ -570,6 +570,7 @@ public class GJarScanController {
             @Override
             public void handle(WorkerStateEvent t) {
                 System.out.println("done:" /* + t.getSource().getValue() */);
+
                 if (bProssesRestarted)
                     return;
                 String strResult = (String)t.getSource().getValue();
@@ -588,7 +589,6 @@ public class GJarScanController {
                 return new CellFactory(isJarScanSearchOk, listResult);
             }
         });
-
         /*
         ColumnConstraints col1 = new ColumnConstraints();
         col1.setPercentWidth(25);
